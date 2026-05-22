@@ -3,6 +3,14 @@ declare(strict_types=1);
 
 function handle_admin(): void {
     require_admin();
+    // Raw log file download — must run before any HTML output.
+    if (($_GET['tab'] ?? '') === 'logs' && !empty($_GET['download'])) {
+        $path = log_path();
+        header('Content-Type: text/plain; charset=utf-8');
+        header('Content-Disposition: attachment; filename="mocksocial-' . date('Ymd-His') . '.log"');
+        if (is_file($path)) readfile($path);
+        exit;
+    }
     if ($_SERVER['REQUEST_METHOD'] === 'POST') { admin_post_handler(); return; }
     $tab = $_GET['tab'] ?? 'users';
     render_header('', 'Admin');
@@ -14,6 +22,7 @@ function handle_admin(): void {
         case 'stats':    admin_stats(); break;
         case 'reset':    admin_reset(); break;
         case 'sessions': admin_sessions(); break;
+        case 'logs':     admin_logs(); break;
         case 'notes':    admin_notes(); break;
         case 'users':
         default:         admin_users(); break;
@@ -22,7 +31,7 @@ function handle_admin(): void {
 }
 
 function admin_nav(string $active): void {
-    $tabs = ['users'=>'Users','seed'=>'Seed content','groups'=>'Groups','stats'=>'Stats','notes'=>'Community Notes','reset'=>'Reset tools','sessions'=>'Sessions'];
+    $tabs = ['users'=>'Users','seed'=>'Seed content','groups'=>'Groups','stats'=>'Stats','notes'=>'Community Notes','reset'=>'Reset tools','sessions'=>'Sessions','logs'=>'Logs'];
     ?>
     <div class="admin-nav">
       <?php foreach ($tabs as $k => $v): ?>
@@ -34,6 +43,12 @@ function admin_nav(string $active): void {
 
 function admin_post_handler(): void {
     $sub = $_POST['subaction'] ?? '';
+    // Snapshot the relevant identifiers for the audit trail.
+    $detail = [];
+    foreach (['user_id','student_id','platform','group_id','post_id','stat_key','stat_value','note_id'] as $k) {
+        if (isset($_POST[$k]) && $_POST[$k] !== '') $detail[] = $k.'='.$_POST[$k];
+    }
+    log_event('admin.'.$sub, implode(' ', $detail));
     switch ($sub) {
         case 'create_user': {
             $username = trim((string)$_POST['username']);
@@ -210,6 +225,11 @@ function admin_post_handler(): void {
         case 'seed_engagement':
             admin_seed_engagement();
             flash('Engagement seeded — added fake likes, comments, and notes to all seed posts.');
+            break;
+        case 'clear_log':
+            @file_put_contents(log_path(), '');
+            flash('Log cleared.');
+            log_event('admin.clear_log', '');
             break;
     }
     redirect(url(['action'=>'admin','tab'=>$_POST['tab'] ?? 'users']));
@@ -854,6 +874,73 @@ function admin_reset(): void {
       </form>
     </div>
     <?php
+}
+
+function admin_logs(): void {
+    $path = log_path();
+    $exists = is_file($path);
+    $size = $exists ? filesize($path) : 0;
+    $limit = isset($_GET['limit']) ? max(50, min(5000, (int)$_GET['limit'])) : 500;
+    $filter = trim((string)($_GET['filter'] ?? ''));
+
+    // Read last $limit lines efficiently for a single afternoon's session.
+    $lines = [];
+    if ($exists && $size > 0) {
+        $all = @file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+        if ($filter !== '') {
+            $all = array_values(array_filter($all, fn($l) => stripos($l, $filter) !== false));
+        }
+        $lines = array_slice($all, -$limit);
+        $lines = array_reverse($lines); // newest first
+    }
+    ?>
+    <h2>Activity log</h2>
+    <p class="muted small">
+      File: <code><?= e($path) ?></code> · size: <?= number_format($size) ?> bytes · showing newest <?= count($lines) ?> of last <?= (int)$limit ?>
+      <?php if ($filter !== ''): ?>· filter: <code><?= e($filter) ?></code><?php endif; ?>
+    </p>
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
+      <form method="get" style="display:flex; gap:8px; align-items:center; flex:1; min-width:300px;">
+        <input type="hidden" name="action" value="admin">
+        <input type="hidden" name="tab" value="logs">
+        <input name="filter" value="<?= e($filter) ?>" placeholder="filter (e.g. login_failed, twitter., student ID)" style="flex:1;">
+        <select name="limit">
+          <?php foreach ([100,500,1000,2000,5000] as $n): ?>
+            <option value="<?= $n ?>" <?= $n===$limit?'selected':'' ?>><?= $n ?> lines</option>
+          <?php endforeach; ?>
+        </select>
+        <button>Refresh</button>
+      </form>
+      <a class="btn-outline" href="<?= url(['action'=>'admin','tab'=>'logs','download'=>1]) ?>">Download .log</a>
+      <form method="post" style="display:inline" onsubmit="return confirm('Clear the log file? This deletes all entries.')">
+        <input type="hidden" name="subaction" value="clear_log">
+        <input type="hidden" name="tab" value="logs">
+        <button class="btn-danger">Clear log</button>
+      </form>
+    </div>
+    <?php if (!$lines): ?>
+      <p class="muted">No log entries yet.</p>
+    <?php else: ?>
+      <table class="admin-table">
+        <thead><tr><th>Time</th><th>Level</th><th>IP</th><th>User</th><th>Action</th><th>Detail</th></tr></thead>
+        <tbody>
+          <?php foreach ($lines as $l):
+            $parts = explode("\t", $l, 6);
+            while (count($parts) < 6) $parts[] = '';
+            [$ts,$lv,$ip,$user,$act,$det] = $parts;
+          ?>
+            <tr>
+              <td class="small"><?= e($ts) ?></td>
+              <td class="small"><?= e($lv) ?></td>
+              <td class="small"><?= e($ip) ?></td>
+              <td class="small"><?= e($user) ?></td>
+              <td class="small"><strong><?= e($act) ?></strong></td>
+              <td class="small"><?= e($det) ?></td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    <?php endif;
 }
 
 function admin_sessions(): void {

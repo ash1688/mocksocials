@@ -21,6 +21,7 @@ function handle_twitter(): void {
 function twitter_post_handler(): void {
     $sub = $_POST['subaction'] ?? '';
     $me  = current_user();
+    log_event('twitter.'.$sub, 'post_id=' . ($_POST['post_id'] ?? '-'));
 
     if ($sub === 'tweet') {
         $content = trim((string)($_POST['content'] ?? ''));

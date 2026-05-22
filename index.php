@@ -7,8 +7,16 @@ require_once __DIR__ . '/src/db.php';
 require_once __DIR__ . '/src/helpers.php';
 require_once __DIR__ . '/src/auth.php';
 
+log_setup_handlers();
+
 $action    = $_GET['action']    ?? null;
 $platform  = $_GET['platform']  ?? null;
+
+// One log line per request — captures every page hit with the chosen route.
+log_event('request', strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') . ' ' .
+                     ($_SERVER['REQUEST_URI'] ?? '/') .
+                     ' platform=' . ($platform ?? '-') .
+                     ' action=' . ($action ?? '-'));
 
 // public routes
 if ($action === 'login') {
@@ -27,6 +35,7 @@ if (!current_user()) {
 touch_last_active(current_user()['id']);
 
 if ($action === 'logout') {
+    log_event('logout');
     $_SESSION = [];
     session_destroy();
     header('Location: ' . base_path() . '/');

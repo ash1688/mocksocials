@@ -10,4 +10,4 @@ Thumbs.db
 *~
 
 # Logs
-*.log
+logs/*.log

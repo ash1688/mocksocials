@@ -5,6 +5,45 @@ function e(?string $s): string {
     return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+// --- Activity / error logging -------------------------------------------------
+// Writes one line per event to logs/app.log. Format:
+//   ISO_TIMESTAMP\tLEVEL\tIP\tUSER\tACTION\tDETAIL
+// Tab-separated so it's easy to grep / awk / open in a spreadsheet.
+
+function log_path(): string {
+    return __DIR__ . '/../logs/app.log';
+}
+
+function log_event(string $action, string $detail = '', string $level = 'info'): void {
+    $u = $_SESSION['user'] ?? null;
+    $userLabel = '-';
+    if (is_array($u)) {
+        $userLabel = ($u['username'] ?? 'uid' . ($u['id'] ?? '?')) . (!empty($u['is_admin']) ? '(admin)' : '');
+    } elseif (is_int($u)) {
+        $userLabel = 'uid' . $u;
+    }
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '-';
+    $ts = date('Y-m-d\TH:i:s');
+    // Strip tabs/newlines from fields so the format stays parseable.
+    $clean = fn($s) => str_replace(["\t", "\r", "\n"], ' ', (string)$s);
+    $line = implode("\t", [$ts, strtoupper($level), $clean($ip), $clean($userLabel), $clean($action), $clean($detail)]) . PHP_EOL;
+    @file_put_contents(log_path(), $line, FILE_APPEND | LOCK_EX);
+}
+
+function log_setup_handlers(): void {
+    set_exception_handler(function (Throwable $e) {
+        log_event('exception', get_class($e) . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine(), 'error');
+        // Re-throw so the default handler still shows the error page in dev.
+        throw $e;
+    });
+    set_error_handler(function ($severity, $message, $file, $line) {
+        if (!(error_reporting() & $severity)) return false;
+        $sev = [E_ERROR=>'error',E_WARNING=>'warning',E_NOTICE=>'notice',E_USER_ERROR=>'error',E_USER_WARNING=>'warning',E_USER_NOTICE=>'notice'][$severity] ?? 'warning';
+        log_event('php_'.$sev, $message . ' @ ' . $file . ':' . $line, $sev);
+        return false; // let PHP's default handler still process it
+    });
+}
+
 function base_path(): string {
     $sn = $_SERVER['SCRIPT_NAME'] ?? '/index.php';
     $dir = rtrim(str_replace('\\', '/', dirname($sn)), '/');

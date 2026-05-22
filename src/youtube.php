@@ -17,6 +17,7 @@ function handle_youtube(): void {
 function yt_post_handler(): void {
     $sub = $_POST['subaction'] ?? '';
     $me  = current_user();
+    log_event('youtube.'.$sub, 'post_id=' . ($_POST['post_id'] ?? '-') . ' title=' . ($_POST['title'] ?? '-'));
     if ($sub === 'upload') {
         $title    = trim((string)($_POST['title'] ?? ''));
         $desc     = trim((string)($_POST['content'] ?? ''));

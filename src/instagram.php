@@ -17,6 +17,7 @@ function handle_instagram(): void {
 function ig_post_handler(): void {
     $sub = $_POST['subaction'] ?? '';
     $me  = current_user();
+    log_event('instagram.'.$sub, 'post_id=' . ($_POST['post_id'] ?? '-'));
     if ($sub === 'post') {
         $img = trim((string)($_POST['image_url'] ?? ''));
         $cap = trim((string)($_POST['content'] ?? ''));

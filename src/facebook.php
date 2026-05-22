@@ -17,6 +17,7 @@ function handle_facebook(): void {
 function fb_post_handler(): void {
     $sub = $_POST['subaction'] ?? '';
     $me  = current_user();
+    log_event('facebook.'.$sub, 'post_id=' . ($_POST['post_id'] ?? '-') . ' group_id=' . ($_POST['group_id'] ?? '-'));
 
     if ($sub === 'post') {
         $content = trim((string)($_POST['content'] ?? ''));
