@@ -2,7 +2,7 @@
 
 A self-hosted sandbox that emulates Twitter, Facebook, Instagram, and YouTube for college social-media teaching. Students log in, post, like, comment, and view fake analytics without ever touching a real platform — useful for assignments, screenshots, and demos where real accounts would be inappropriate.
 
-Built for Hereford College of Arts but generic enough for any course covering social media strategy, content creation, or platform analytics.
+Built for Hereford College Computing dept but generic enough for any course covering social media strategy, content creation, or platform analytics.
 
 ## What's inside
 
