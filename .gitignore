@@ -1,0 +1,13 @@
+# Local configuration with DB credentials — never commit
+src/config.local.php
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs
+*.log
