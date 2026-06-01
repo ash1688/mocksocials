@@ -1,0 +1,71 @@
+# MockSocial — Business Applications of Social Media
+
+A self-hosted teaching sandbox for BTEC L3 Unit 8 (Business Applications of Social Media), Assignment 2. Each student runs the social-media presence of a single fictional organisation, schedules a campaign, and reviews engagement + search-ranking analytics so they can optimise content. The app supplies the screenshots and data; the assessed deliverable is a separate written report.
+
+## Language
+
+**Organisation**:
+The fictional business or charity whose social-media presence a student manages. The fixed scenario organisation is the charity *Technicians Initiative*. The student acts *as* the Organisation, not as themselves.
+_Avoid_: Brand, business, client, company (use Organisation; "client" refers to the review audience, see below)
+
+**Student**:
+A real logged-in learner who manages one Organisation's presence. Distinct from the people the content is aimed at.
+_Avoid_: User (too broad)
+
+**Evidence sandbox**:
+The role of this app — the place where a Student performs the implementation (Aim C) and assembles plan artifacts (Aim B), producing screenshots/exports for their written report. The app is not a report-writing tool.
+
+**Workspace**:
+A Student's private, isolated instance of an Organisation's presence — its own posts, schedule, analytics, and search rankings. One Workspace per Student; no Workspace can see another's data.
+_Avoid_: Tenant, instance, environment
+
+**Campaign**:
+A goal-driven, self-contained run the Student executes on behalf of the Organisation, owning its own Targets, published content, Simulation timeline (Campaign clock), and analytics. A Workspace can hold many Campaigns but only one is the Active campaign at a time.
+
+**Active campaign**:
+The single Campaign currently being posted to and simulated in a Workspace. Other Campaigns are inactive (past runs, experiments, or alternative plans) and are not accruing Simulations. All engagement metrics — followers, likes, shares, reach, Search rankings — are scoped to a Campaign and start from a defined baseline, so each Campaign's evidence is a self-contained before/after story. Only the Organisation's branding persists across Campaigns.
+
+**Target**:
+A success criterion the Student sets in-app for the Campaign (e.g. number of followers, likes, shares). Actuals are simulation-driven (never typed in); an analytics dashboard shows actual-vs-target progress over Simulations, per platform and overall. Manual stats override survives only as a teacher-only debug tool.
+
+**Content schedule**:
+A separate Aim B planning artifact documenting what the Organisation intends to post, on which Active platform, how often, and on which day/time. It is not an executable queue — the Student enacts it by publishing posts immediately, each stamped with a chosen day/time (see Posting day/time).
+_Avoid_: Calendar, timetable, queue
+
+**Posting day/time**:
+A day-of-week + time-of-day the Student sets on each post when composing (e.g. Tue 18:00). The post publishes immediately but is stamped with this value; the Performance score's timing factor reads it, and frequency is derived from how posts are spaced across a Platform.
+
+**Keyword strategy**:
+The set of keywords/hashtags the Student chooses to make the Organisation's content discoverable, used both on-platform and for the search-ranking simulation.
+
+**Campaign clock**:
+The simulated date within a Workspace. It advances only when the Student runs a Simulation; it is independent of real wall-clock time.
+
+**Simulation**:
+The act of advancing the Campaign clock by a step (e.g. a day or week), during which engagement and search rankings accrue deterministically from the content already published. The optimise loop is: publish → simulate → review → optimise → simulate again.
+_Avoid_: Tick, run, fast-forward (use Simulation)
+
+**Performance score**:
+A per-post weighted score the Simulation computes from teachable levers — format/rich media, keyword & hashtag use, posting day/time & frequency, and content-quality cues (length, call-to-action, on-mission). It drives how much reach and engagement a post earns. Timing/frequency and quality cues are weighted more heavily. Deterministic given the content, with seeded pseudo-random noise so results look organic but stay stable across re-simulation.
+_Avoid_: Quality score, algorithm score
+
+**Hint chip**:
+A short qualitative tag shown on a post (e.g. "had an image", "posted at peak time", "no hashtags") that nudges the Student toward what helped or hurt, without revealing the Performance score math. Always visible to Students. The full factor breakdown stays hidden by default but a teacher can toggle it visible to demonstrate cause and effect.
+
+**Search ranking**:
+A simulated search-engine results position for a tracked keyword, shown both as a mock search-results page (a fake SERP the Student can search) and a keyword-rank dashboard tracking movement over Simulations. It rises with keyword presence in content, content freshness, engagement signals, and content volume/format — the basis for assessing SEO impact (C.P7).
+_Avoid_: SEO score (use Search ranking)
+
+**Platform**:
+One of the mock social networks the Organisation can post to — MockTweet (twitter), MockBook (facebook), MockGram (instagram), MockTube (youtube).
+
+**Active platform**:
+A Platform the Student has chosen to use for the Organisation in their Workspace. All four exist; the Student enables the ones suited to the charity's audience (a graded plan decision) and simply leaves the rest unused.
+
+**Fake persona**:
+A fictional character (`fake_users`) representing a member of the public. Personas never log in. They play two roles: (1) the **audience** that follows, likes, shares and comments on the Organisation's content (the engagement the Simulation generates), and (2) authors of the **seeded community** backdrop. The Student never posts as a persona — all Organisation content is the Student's own.
+_Avoid_: Bot, NPC
+
+**Seeded community**:
+Ambient persona-authored content present in a Workspace from the start, so the platforms feel populated rather than empty or as if the Organisation is the only one posting. It is background depth, not a competitor to benchmark against. Copied per Workspace so one Student's interactions never leak into another's.
+_Avoid_: Feed, backdrop
