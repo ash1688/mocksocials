@@ -17,7 +17,9 @@ import {
   METRIC_LABELS,
 } from "@/lib/campaign/constants";
 import { PLATFORMS } from "@/lib/simulation/types";
+import { listCampaignPosts } from "@/lib/posts/queries";
 import { Button } from "@/components/ui/button";
+import { ContentSection } from "./content-section";
 
 export default async function CampaignPage({
   params,
@@ -31,6 +33,7 @@ export default async function CampaignPage({
 
   const { campaign, platforms, keywords, targets } = setup;
   const activeSet = new Set(platforms);
+  const posts = await listCampaignPosts(campaign.id);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 px-6 py-10">
@@ -210,6 +213,12 @@ export default async function CampaignPage({
           </Button>
         </form>
       </section>
+
+      <ContentSection
+        campaignId={campaign.id}
+        activePlatforms={platforms}
+        posts={posts}
+      />
     </main>
   );
 }
