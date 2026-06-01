@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { defineConfig } from "drizzle-kit";
 
 // Migrations are SQL-first and live under ./drizzle (ADR-0004: Drizzle stays
