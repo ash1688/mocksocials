@@ -55,3 +55,13 @@ headroom to optimise toward. Exact weights, gate multipliers and baselines remai
   so screenshots are reproducible and defensible as assessment evidence.
 - Seeded noise must derive from stable inputs (post id, campaign id, keyword), never from
   real time or a fresh random source, or reproducibility breaks.
+
+## Implementation note (TS rebuild, 2026-06-02)
+
+The prototype framed all four cliffs as per-post multipliers, but **ghosting cannot apply
+per post** — a ghosted platform has no posts to multiply. So ghosting is implemented at the
+**platform level**: an Active platform with no posts in the step loses followers (audience
+attrition, ~2%/day), making "you enabled it but never posted" a visible decline. The other
+three gates (wrong-format ×0.55, hashtag-spam ×0.60, posting-fatigue ×0.70) apply per post
+as described. The ×0.50 ghosting figure is superseded by the per-day decay rate; both remain
+tunable.

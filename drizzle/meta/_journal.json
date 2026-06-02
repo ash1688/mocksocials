@@ -8,6 +8,20 @@
       "when": 1780311459840,
       "tag": "0000_massive_giant_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780322937431,
+      "tag": "0001_wise_silver_fox",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780323339780,
+      "tag": "0002_common_xorn",
+      "breakpoints": true
     }
   ]
 }

@@ -18,8 +18,10 @@ import {
 } from "@/lib/campaign/constants";
 import { PLATFORMS } from "@/lib/simulation/types";
 import { listCampaignPosts } from "@/lib/posts/queries";
+import { getSimSummary } from "@/lib/analytics/queries";
 import { Button } from "@/components/ui/button";
 import { ContentSection } from "./content-section";
+import { SimulationPanel } from "./simulation-panel";
 
 export default async function CampaignPage({
   params,
@@ -34,6 +36,7 @@ export default async function CampaignPage({
   const { campaign, platforms, keywords, targets } = setup;
   const activeSet = new Set(platforms);
   const posts = await listCampaignPosts(campaign.id);
+  const simSummary = await getSimSummary(campaign.id);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 px-6 py-10">
@@ -218,6 +221,13 @@ export default async function CampaignPage({
         campaignId={campaign.id}
         activePlatforms={platforms}
         posts={posts}
+      />
+
+      <SimulationPanel
+        campaignId={campaign.id}
+        isActive={campaign.isActive}
+        clock={campaign.clock}
+        summary={simSummary}
       />
     </main>
   );

@@ -63,8 +63,12 @@ One of the mock social networks the Organisation can post to — MockTweet (twit
 A Platform the Student has chosen to use for the Organisation in their Workspace. All four exist; the Student enables the ones suited to the charity's audience (a graded plan decision) and simply leaves the rest unused.
 
 **Fake persona**:
-A fictional character (`fake_users`) representing a member of the public. Personas never log in. They play two roles: (1) the **audience** that follows, likes, shares and comments on the Organisation's content (the engagement the Simulation generates), and (2) authors of the **seeded community** backdrop. The Student never posts as a persona — all Organisation content is the Student's own.
+A fictional character (`fake_users`) representing a member of the public. Personas never log in. They play two roles: (1) the **audience** that follows, likes, shares and comments on the Organisation's content (the engagement the Simulation generates), and (2) authors of the **seeded community** backdrop. The Student never posts as a persona — all Organisation content is the Student's own. Personas never respond to an Organisation engagement: a comment thread terminates at the Student's reply.
 _Avoid_: Bot, NPC
+
+**Organisation engagement**:
+The likes and replies the Student issues *while acting as the Organisation* — onto persona (seeded community) content, or onto the comments the Organisation's own posts received. It is community-management activity: cosmetic, **never scored, and never feeds Targets or the Simulation** (the Student has no influence over engagement the Organisation *receives* — that is simulation-generated, per ADR-0001). An Organisation reply goes at most one level deep below a persona comment, and personas never reply back to it.
+_Avoid_: Interaction, self-like (the Organisation never engages its own posts to inflate metrics)
 
 **Seeded community**:
 Ambient persona-authored content present in a Workspace from the start, so the platforms feel populated rather than empty or as if the Organisation is the only one posting. It is background depth, not a competitor to benchmark against. Copied per Workspace so one Student's interactions never leak into another's.

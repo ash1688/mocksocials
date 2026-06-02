@@ -50,6 +50,15 @@ export const GATE_PENALTIES = {
 export const REACH_FLOOR = 0.08;
 export const REACH_EXPONENT = 2.2; // steepness
 
+/**
+ * Ghosting (ADR-0001 gate) is applied at the PLATFORM level, not per post: an
+ * Active platform that received no posts in the step loses followers (the
+ * audience disengages). Modelled as per-day follower attrition so it is a
+ * visible teachable cliff. ~2%/day compounds to the spirit of the ×0.50 gate
+ * over a few weeks of neglect.
+ */
+export const GHOSTING_DECAY_PER_DAY = 0.02;
+
 export interface GateFlags {
   wrongFormat?: boolean;
   hashtagSpam?: boolean;

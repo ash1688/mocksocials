@@ -1,0 +1,1 @@
+ALTER TABLE "post_metrics" ADD COLUMN "hints" jsonb DEFAULT '[]'::jsonb NOT NULL;

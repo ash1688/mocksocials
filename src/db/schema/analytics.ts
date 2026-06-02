@@ -3,11 +3,14 @@ import {
   uuid,
   integer,
   doublePrecision,
+  jsonb,
   date,
   timestamp,
   unique,
   index,
 } from "drizzle-orm/pg-core";
+
+import type { HintChip } from "@/lib/simulation/hints";
 
 import { campaigns, keywords } from "./campaign";
 import { posts } from "./content";
@@ -25,6 +28,10 @@ export const simulations = pgTable(
     campaignId: uuid("campaign_id")
       .notNull()
       .references(() => campaigns.id, { onDelete: "cascade" }),
+    // Monotonic step number within the campaign (0-based). The orderable key
+    // for "latest" / "previous" — row ids are random UUIDs and must not be
+    // used for ordering.
+    stepIndex: integer("step_index").notNull().default(0),
     step: simStepEnum("step").notNull().default("day"),
     fromClock: date("from_clock").notNull(),
     toClock: date("to_clock").notNull(),
@@ -58,9 +65,11 @@ export const postMetrics = pgTable(
     comments: integer("comments").notNull().default(0),
     followersGained: integer("followers_gained").notNull().default(0),
 
-    // The five sub-scores + applied gate multiplier, for the teacher breakdown
-    // and the qualitative hint chips. JSON keeps the scaffold flexible.
+    // Pre-gate geometric-mean aggregate, kept for the teacher factor breakdown.
     factors: doublePrecision("factors_total"),
+    // Always-visible qualitative nudges (CONTEXT.md: Hint chip). The numeric
+    // score/breakdown stays teacher-only; these do not.
+    hints: jsonb("hints").$type<HintChip[]>().notNull().default([]),
   },
   (t) => [
     unique("post_metrics_unique").on(t.postId, t.simulationId),
