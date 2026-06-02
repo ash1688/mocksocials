@@ -13,6 +13,7 @@ import { PLATFORM_META } from "@/lib/render/platform-meta";
 import { PlatformShell, ProfileHeader } from "./_components/platform-shell";
 import { PostCard } from "./_components/post-card";
 import { ComposeBox } from "./_components/compose-box";
+import { MockTweetView } from "./_platforms/mocktweet";
 
 function isPlatform(v: string): v is Platform {
   return (PLATFORMS as readonly string[]).includes(v);
@@ -44,6 +45,26 @@ export default async function PlatformRenderPage({
 
   const orgName = org?.name ?? "Organisation";
   const orgHandle = org?.handle ?? "organisation";
+
+  // Faithful per-platform layouts (ported from the PHP renders). MockTweet
+  // first; the rest fall back to the generic render until rebuilt.
+  if (platform === "mocktweet") {
+    return (
+      <PlatformShell platform={platform} campaignId={id} viewingInactive={!campaign.isActive}>
+        <MockTweetView
+          campaignId={id}
+          orgName={orgName}
+          orgHandle={orgHandle}
+          tagline={org?.tagline ?? null}
+          audience={audience}
+          feed={feed}
+          liked={liked}
+          canCompose={canCompose}
+          engageable={engageable}
+        />
+      </PlatformShell>
+    );
+  }
 
   return (
     <PlatformShell
