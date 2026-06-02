@@ -37,6 +37,8 @@ npm run dev                   # http://localhost:3000
 | Script | Purpose |
 |--------|---------|
 | `npm run dev` / `build` / `start` | Next.js dev / production build / serve |
+| `npm run clean` | Delete the `.next` cache (fixes stale-webpack errors) |
+| `npm run dev:clean` | Clean then start dev (use after switching from `build`) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint (next config) |
 | `npm run db:generate` | Generate a SQL migration from schema changes |
