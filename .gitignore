@@ -27,6 +27,9 @@ npm-debug.log*
 /.claude/launch.json
 /dev-server.log
 
+# PHP DB dump — reference only, contains real student PII; keep local, never commit
+/docs/mocksocial_php.sql
+
 # os / editor
 .DS_Store
 Thumbs.db

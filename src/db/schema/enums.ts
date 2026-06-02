@@ -1,30 +1,27 @@
 import { pgEnum } from "drizzle-orm/pg-core";
 
-/** The four mock social networks (CONTEXT.md: Platform). */
+// Faithful port of the PHP MockSocial enums (docs/mocksocial_php.sql).
+
+/** The four mock networks. Stored with their original platform keys; the
+ *  Mock* wordmarks (MockTweet/MockBook/MockGram/MockTube) are display-only. */
 export const platformEnum = pgEnum("platform", [
-  "mocktweet", // twitter
-  "mockbook", // facebook
-  "mockgram", // instagram
-  "mocktube", // youtube
+  "twitter",
+  "facebook",
+  "instagram",
+  "youtube",
 ]);
 
-/** Who authored a piece of content. The Organisation authors the Student's own
- *  posts; fake personas author the seeded community and engagement. */
-export const authorKindEnum = pgEnum("author_kind", [
-  "organisation",
-  "persona",
+/** community_notes.status */
+export const noteStatusEnum = pgEnum("note_status", ["visible", "removed"]);
+
+/** group_members.role */
+export const groupRoleEnum = pgEnum("group_role", ["member", "admin"]);
+
+/** youtube_meta.stats_profile */
+export const ytStatsProfileEnum = pgEnum("yt_stats_profile", [
+  "low",
+  "moderate",
+  "high",
+  "hyped",
+  "viral",
 ]);
-
-/** Metrics a Target can be set against (CONTEXT.md: Target). */
-export const metricEnum = pgEnum("metric", [
-  "followers",
-  "likes",
-  "shares",
-  "reach",
-  "comments",
-]);
-
-/** A simulation step granularity (CONTEXT.md: Campaign clock / Simulation). */
-export const simStepEnum = pgEnum("sim_step", ["day", "week"]);
-
-export const roleEnum = pgEnum("role", ["student", "teacher"]);

@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "MockSocial",
   description:
-    "Unit 8 evidence sandbox — run an organisation's social-media campaign, simulate engagement, review analytics.",
+    "Internal teaching tool — a mock social-media sandbox (MockTweet, MockBook, MockGram, MockTube).",
 };
 
 export default function RootLayout({

@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1780311459840,
-      "tag": "0000_massive_giant_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1780322937431,
-      "tag": "0001_wise_silver_fox",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1780323339780,
-      "tag": "0002_common_xorn",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1780389838051,
-      "tag": "0003_bitter_lady_mastermind",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1780396247791,
-      "tag": "0004_sharp_vampiro",
+      "when": 1780398854960,
+      "tag": "0000_mushy_crystal",
       "breakpoints": true
     }
   ]

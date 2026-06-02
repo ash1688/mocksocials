@@ -19,7 +19,6 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/db/seed.ts",
-    "sim:check": "tsx scripts/sim-check.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },

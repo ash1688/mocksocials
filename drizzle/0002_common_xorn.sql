@@ -1,1 +1,0 @@
-ALTER TABLE "simulations" ADD COLUMN "step_index" integer DEFAULT 0 NOT NULL;

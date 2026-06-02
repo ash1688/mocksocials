@@ -3,19 +3,19 @@
  * HTTP-only cookie, stored SHA-256-hashed in the `sessions` table. No OAuth.
  *
  * Cookie writes (createSession / destroySession) only work in Server Actions
- * and Route Handlers. getCurrentAccount only reads, so it is safe in Server
+ * and Route Handlers. getCurrentUser only reads, so it is safe in Server
  * Components too.
  */
 import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { accounts, sessions } from "@/db/schema";
+import { users, sessions } from "@/db/schema";
 
 export const SESSION_COOKIE = "mocksocial_session";
 const SESSION_TTL_DAYS = 7;
 
-export type Account = typeof accounts.$inferSelect;
+export type CurrentUser = typeof users.$inferSelect;
 
 function sessionExpiry(): Date {
   return new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000);
@@ -35,13 +35,13 @@ async function hashToken(token: string): Promise<string> {
   return Buffer.from(digest).toString("hex");
 }
 
-/** Create a session for an account and set the cookie. Call from an action. */
-export async function createSession(accountId: string): Promise<void> {
+/** Create a session for a user and set the cookie. Call from an action. */
+export async function createSession(userId: number): Promise<void> {
   const token = generateSessionToken();
   const id = await hashToken(token);
   const expiresAt = sessionExpiry();
 
-  await db.insert(sessions).values({ id, accountId, expiresAt });
+  await db.insert(sessions).values({ id, userId, expiresAt });
 
   const store = await cookies();
   store.set(SESSION_COOKIE, token, {
@@ -53,17 +53,17 @@ export async function createSession(accountId: string): Promise<void> {
   });
 }
 
-/** Resolve the logged-in account from the session cookie, or null. */
-export async function getCurrentAccount(): Promise<Account | null> {
+/** Resolve the logged-in user from the session cookie, or null. */
+export async function getCurrentUser(): Promise<CurrentUser | null> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
 
   const id = await hashToken(token);
   const row = await db
-    .select({ account: accounts, expiresAt: sessions.expiresAt })
+    .select({ user: users, expiresAt: sessions.expiresAt })
     .from(sessions)
-    .innerJoin(accounts, eq(sessions.accountId, accounts.id))
+    .innerJoin(users, eq(sessions.userId, users.id))
     .where(eq(sessions.id, id))
     .limit(1);
 
@@ -73,7 +73,7 @@ export async function getCurrentAccount(): Promise<Account | null> {
     await db.delete(sessions).where(eq(sessions.id, id));
     return null;
   }
-  return found.account;
+  return found.user;
 }
 
 /** Destroy the current session and clear the cookie. Call from an action. */
