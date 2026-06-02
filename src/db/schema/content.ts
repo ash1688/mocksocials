@@ -6,6 +6,7 @@ import {
   boolean,
   timestamp,
   index,
+  unique,
 } from "drizzle-orm/pg-core";
 
 import { workspaces } from "./org";
@@ -59,6 +60,9 @@ export const posts = pgTable(
     body: text("body").notNull(),
     hasImage: boolean("has_image").notNull().default(false),
     hasVideo: boolean("has_video").notNull().default(false),
+    // MockTube video length, rendered as an MM:SS badge (ADR-0005). Null unless
+    // hasVideo. Image media is hot-linked from seeded Picsum at render time.
+    durationSeconds: integer("duration_seconds"),
     hashtags: text("hashtags").array().notNull().default([]),
     callToAction: boolean("call_to_action").notNull().default(false),
 
@@ -81,7 +85,13 @@ export const posts = pgTable(
   ],
 );
 
-/** Threaded comments by personas on a post (reused infra from CONTEXT.md). */
+/**
+ * Comments on a post. Persona comments are simulation-generated (the audience);
+ * an Organisation reply is Student-authored community management (ADR-0005:
+ * Organisation engagement). authorKind distinguishes them; personaId is set only
+ * for persona comments. Threads cap at one level — a persona comment may receive
+ * at most one Organisation reply, enforced in app logic (CONTEXT.md).
+ */
 export const comments = pgTable(
   "comments",
   {
@@ -89,14 +99,50 @@ export const comments = pgTable(
     postId: uuid("post_id")
       .notNull()
       .references(() => posts.id, { onDelete: "cascade" }),
-    parentId: uuid("parent_id"),
-    personaId: uuid("persona_id")
-      .notNull()
-      .references(() => personas.id, { onDelete: "cascade" }),
+    parentId: uuid("parent_id"), // the persona comment an Org reply hangs under
+    authorKind: authorKindEnum("author_kind").notNull(),
+    // Set when authorKind = 'persona'; null for an Organisation reply.
+    personaId: uuid("persona_id").references(() => personas.id, {
+      onDelete: "cascade",
+    }),
     body: text("body").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
   (t) => [index("comments_post_idx").on(t.postId)],
+);
+
+/**
+ * Student-given likes issued as the Organisation (ADR-0005: Organisation
+ * engagement) — onto persona/seeded-community posts or onto comments. Cosmetic:
+ * DELIBERATELY excluded from every analytics/Target rollup. The Organisation may
+ * never like its own posts (anti-cheat, enforced in app logic).
+ */
+export const orgLikes = pgTable(
+  "org_likes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => campaigns.id, { onDelete: "cascade" }),
+    // Exactly one of postId / commentId is set (the liked target).
+    postId: uuid("post_id").references(() => posts.id, { onDelete: "cascade" }),
+    commentId: uuid("comment_id").references(() => comments.id, {
+      onDelete: "cascade",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    // One like per target per workspace (NULLs are distinct in PG, so post-likes
+    // and comment-likes don't collide on the unused column).
+    unique("org_likes_post_unique").on(t.workspaceId, t.postId),
+    unique("org_likes_comment_unique").on(t.workspaceId, t.commentId),
+    index("org_likes_campaign_idx").on(t.campaignId),
+  ],
 );
