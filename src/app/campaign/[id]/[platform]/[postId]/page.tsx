@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { requireStudentWorkspace } from "@/lib/auth/guards";
 import { getCampaign } from "@/lib/campaign/queries";
 import { getOrganisationForWorkspace, getPostDetail } from "@/lib/render/queries";
+import { deletePost } from "@/lib/posts/actions";
 import { PLATFORMS, type Platform } from "@/lib/simulation/types";
+import { Button } from "@/components/ui/button";
 import { PlatformShell } from "../_components/platform-shell";
 import { PostCard } from "../_components/post-card";
 
@@ -45,6 +47,18 @@ export default async function PostDetailPage({
         orgName={orgName}
         orgHandle={orgHandle}
       />
+
+      {/* The Organisation can remove its own post while the campaign is active. */}
+      {detail.post.authorKind === "organisation" && campaign.isActive ? (
+        <form action={deletePost} className="mt-2">
+          <input type="hidden" name="campaignId" value={id} />
+          <input type="hidden" name="platform" value={platform} />
+          <input type="hidden" name="postId" value={detail.post.id} />
+          <Button type="submit" variant="outline" size="sm">
+            Delete post
+          </Button>
+        </form>
+      ) : null}
 
       <section className="mt-4">
         <h2 className="mb-2 text-sm font-semibold">

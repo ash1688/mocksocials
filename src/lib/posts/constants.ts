@@ -27,6 +27,18 @@ export function parseTimeToMinute(value: string): number | null {
   return h * 60 + m;
 }
 
+/** "M:SS" / "MM:SS" -> total seconds, or null if malformed (MockTube length). */
+export function parseMmSsToSeconds(value: string): number | null {
+  const v = value.trim();
+  if (!v) return null;
+  const match = /^(\d{1,3}):(\d{2})$/.exec(v);
+  if (!match) return null;
+  const m = Number(match[1]);
+  const s = Number(match[2]);
+  if (s > 59) return null;
+  return m * 60 + s;
+}
+
 /** Parse a free-text hashtag field into clean, de-duplicated tags (no #). */
 export function parseHashtags(raw: string): string[] {
   const seen = new Set<string>();

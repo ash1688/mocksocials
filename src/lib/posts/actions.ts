@@ -9,7 +9,7 @@ import { posts, activePlatforms } from "@/db/schema";
 import { requireStudentWorkspace } from "@/lib/auth/guards";
 import { getCampaign } from "@/lib/campaign/queries";
 import { PLATFORMS, type Platform } from "@/lib/simulation/types";
-import { parseTimeToMinute, parseHashtags } from "./constants";
+import { parseTimeToMinute, parseHashtags, parseMmSsToSeconds } from "./constants";
 
 function isPlatform(v: string): v is Platform {
   return (PLATFORMS as readonly string[]).includes(v);
@@ -27,6 +27,15 @@ export async function publishPost(formData: FormData): Promise<void> {
   if (!campaign) redirect("/dashboard");
 
   const platform = String(formData.get("platform") ?? "");
+  const renderPath = `/campaign/${campaignId}/${platform}`;
+
+  // Only the Active campaign is engageable; inactive campaigns are frozen
+  // (ADR-0005). Composing to a past campaign is rejected.
+  if (!campaign.isActive) {
+    revalidatePath(renderPath);
+    return;
+  }
+
   const body = String(formData.get("body") ?? "").trim();
   const postingDay = Number(formData.get("postingDay"));
   const postingMinute = parseTimeToMinute(String(formData.get("time") ?? ""));
@@ -34,6 +43,9 @@ export async function publishPost(formData: FormData): Promise<void> {
   const hasImage = formData.get("hasImage") === "on";
   const hasVideo = formData.get("hasVideo") === "on";
   const callToAction = formData.get("callToAction") === "on";
+  const durationSeconds = hasVideo
+    ? parseMmSsToSeconds(String(formData.get("duration") ?? ""))
+    : null;
 
   const basicsValid =
     body.length > 0 &&
@@ -43,7 +55,7 @@ export async function publishPost(formData: FormData): Promise<void> {
     postingMinute !== null;
 
   if (!isPlatform(platform) || !basicsValid || postingMinute === null) {
-    revalidatePath(`/campaign/${campaignId}`);
+    revalidatePath(renderPath);
     return;
   }
 
@@ -59,7 +71,7 @@ export async function publishPost(formData: FormData): Promise<void> {
     )
     .limit(1);
   if (!active) {
-    revalidatePath(`/campaign/${campaignId}`);
+    revalidatePath(renderPath);
     return;
   }
 
@@ -71,6 +83,7 @@ export async function publishPost(formData: FormData): Promise<void> {
     body,
     hasImage,
     hasVideo,
+    durationSeconds,
     hashtags,
     callToAction,
     postingDay,
@@ -80,16 +93,17 @@ export async function publishPost(formData: FormData): Promise<void> {
     publishedOn: new Date(campaign.clock),
   });
 
-  revalidatePath(`/campaign/${campaignId}`);
+  revalidatePath(renderPath);
 }
 
 export async function deletePost(formData: FormData): Promise<void> {
   const campaignId = String(formData.get("campaignId") ?? "");
+  const platform = String(formData.get("platform") ?? "");
   const postId = String(formData.get("postId") ?? "");
   const { workspace } = await requireStudentWorkspace();
   // Scope the delete to the Student's workspace (ownership).
   await db
     .delete(posts)
     .where(and(eq(posts.id, postId), eq(posts.workspaceId, workspace.id)));
-  revalidatePath(`/campaign/${campaignId}`);
+  redirect(`/campaign/${campaignId}/${platform}`);
 }

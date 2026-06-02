@@ -54,6 +54,24 @@ export async function getCampaign(
   return row ?? null;
 }
 
+/** Whether a platform is enabled (Active platform) for a campaign. */
+export async function isPlatformActive(
+  campaignId: string,
+  platform: (typeof activePlatforms.$inferSelect)["platform"],
+): Promise<boolean> {
+  const [row] = await db
+    .select({ platform: activePlatforms.platform })
+    .from(activePlatforms)
+    .where(
+      and(
+        eq(activePlatforms.campaignId, campaignId),
+        eq(activePlatforms.platform, platform),
+      ),
+    )
+    .limit(1);
+  return !!row;
+}
+
 /** A campaign plus its setup: active platforms, keywords, targets. */
 export async function getCampaignSetup(
   campaignId: string,
