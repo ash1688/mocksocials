@@ -10,6 +10,9 @@ export type Profile = {
   displayName: string;
   avatarUrl: string | null;
   bio: string | null;
+  coverUrl: string | null;
+  location: string | null;
+  education: string | null;
 };
 
 export async function getUserProfile(id: number): Promise<Profile | null> {
@@ -23,6 +26,9 @@ export async function getUserProfile(id: number): Promise<Profile | null> {
     displayName: row.displayName,
     avatarUrl: row.avatarUrl,
     bio: row.bio,
+    coverUrl: row.coverUrl,
+    location: row.location,
+    education: row.education,
   };
 }
 
@@ -37,5 +43,8 @@ export async function getFakeUserProfile(id: number): Promise<Profile | null> {
     displayName: row.displayName,
     avatarUrl: row.avatarUrl,
     bio: row.bio,
+    coverUrl: row.coverUrl,
+    location: row.location,
+    education: row.education,
   };
 }
