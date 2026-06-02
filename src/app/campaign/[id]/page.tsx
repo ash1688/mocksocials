@@ -95,6 +95,20 @@ export default async function CampaignPage({
             );
           })}
         </div>
+        {platforms.length > 0 ? (
+          <p className="flex flex-wrap items-center gap-3 text-sm">
+            <span className="text-muted-foreground">Open render:</span>
+            {platforms.map((p) => (
+              <Link
+                key={p}
+                href={`/campaign/${campaign.id}/${p}`}
+                className="text-platform underline-offset-4 hover:underline"
+              >
+                {PLATFORM_LABELS[p]} →
+              </Link>
+            ))}
+          </p>
+        ) : null}
       </section>
 
       {/* Keyword strategy (CONTEXT.md: Keyword strategy) */}
