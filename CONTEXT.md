@@ -12,6 +12,10 @@ _Avoid_: Brand, business, client, company (use Organisation; "client" refers to 
 A real logged-in learner who manages one Organisation's presence. Distinct from the people the content is aimed at.
 _Avoid_: User (too broad)
 
+**Teacher**:
+A named staff member who runs the platform — the only non-Student actor. Each Teacher has their *own* account (you, Nat, Fil), not a shared login, so every action is attributable and individually revocable. There is **one** Teacher role, not an Admin/Teacher hierarchy — all Teachers are equal and hold the full kit: an admin panel for Student account CRUD, the Scenario module enable/disable + triggering, and the teacher-only analytics toggles (factor breakdown, manual-stats debug).
+_Avoid_: Admin (synonym — use Teacher), instructor, tutor
+
 **Evidence sandbox**:
 The role of this app — the place where a Student performs the implementation (Aim C) and assembles plan artifacts (Aim B), producing screenshots/exports for their written report. The app is not a report-writing tool.
 

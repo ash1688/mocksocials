@@ -4,6 +4,14 @@ import { getCurrentAccount, type Account } from "./session";
 import { getOrCreateWorkspace } from "./provision";
 import type { workspaces } from "@/db/schema";
 
+/** Require a signed-in teacher. Redirects students to their dashboard. */
+export async function requireTeacher(): Promise<Account> {
+  const account = await getCurrentAccount();
+  if (!account) redirect("/login");
+  if (account.role !== "teacher") redirect("/dashboard");
+  return account;
+}
+
 type Workspace = typeof workspaces.$inferSelect;
 
 /** Require a signed-in student and return them with their Workspace. Redirects

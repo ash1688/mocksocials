@@ -2,21 +2,11 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { eq, inArray } from "drizzle-orm";
 
-import { db } from "@/db";
-import {
-  campaigns,
-  simulations,
-  metricSnapshots,
-  searchRankings,
-  posts,
-  comments,
-  orgLikes,
-} from "@/db/schema";
 import { requireStudentWorkspace } from "@/lib/auth/guards";
 import { getCampaign } from "@/lib/campaign/queries";
 import { runSimulation } from "./run";
+import { resetCampaignSimulation } from "./reset";
 
 /** Advance the Active campaign's clock by a step (CONTEXT.md: Simulation).
  *  Only the Active campaign accrues simulations. */
@@ -44,35 +34,6 @@ export async function resetSimulation(formData: FormData): Promise<void> {
   const campaign = await getCampaign(campaignId, workspace.id);
   if (!campaign) redirect("/dashboard");
 
-  await db.transaction(async (tx) => {
-    const sims = await tx
-      .select({ id: simulations.id })
-      .from(simulations)
-      .where(eq(simulations.campaignId, campaignId));
-    const simIds = sims.map((s) => s.id);
-    // post_metrics cascade-delete via simulations; snapshots/rankings are
-    // scoped by campaign, remove explicitly.
-    await tx.delete(metricSnapshots).where(eq(metricSnapshots.campaignId, campaignId));
-    await tx.delete(searchRankings).where(eq(searchRankings.campaignId, campaignId));
-    // Reset clears the campaign's engagement entirely — received (persona
-    // comments) and given (Organisation likes + replies) alike.
-    await tx.delete(orgLikes).where(eq(orgLikes.campaignId, campaignId));
-    const postRows = await tx
-      .select({ id: posts.id })
-      .from(posts)
-      .where(eq(posts.campaignId, campaignId));
-    const postIds = postRows.map((p) => p.id);
-    if (postIds.length > 0) {
-      await tx.delete(comments).where(inArray(comments.postId, postIds));
-    }
-    if (simIds.length > 0) {
-      await tx.delete(simulations).where(inArray(simulations.id, simIds));
-    }
-    await tx
-      .update(campaigns)
-      .set({ clock: campaign.startDate })
-      .where(eq(campaigns.id, campaignId));
-  });
-
+  await resetCampaignSimulation(campaignId);
   revalidatePath(`/campaign/${campaignId}`);
 }
