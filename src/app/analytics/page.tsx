@@ -2,7 +2,10 @@ import Link from "next/link";
 
 import { requireStudentWorkspace } from "@/lib/auth/guards";
 import { listCampaigns } from "@/lib/campaign/queries";
-import { getCampaignDashboard } from "@/lib/analytics/queries";
+import {
+  getCampaignDashboard,
+  getKeywordRankings,
+} from "@/lib/analytics/queries";
 import {
   PLATFORM_LABELS,
   METRIC_LABELS,
@@ -104,7 +107,10 @@ export default async function AnalyticsPage({
 }
 
 async function DashboardBody({ campaignId }: { campaignId: string }) {
-  const data = await getCampaignDashboard(campaignId);
+  const [data, ranks] = await Promise.all([
+    getCampaignDashboard(campaignId),
+    getKeywordRankings(campaignId),
+  ]);
 
   if (data.simCount === 0) {
     return (
@@ -180,6 +186,58 @@ async function DashboardBody({ campaignId }: { campaignId: string }) {
             </tbody>
           </table>
         </div>
+      </section>
+
+      {/* Search rankings (C.P7) */}
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-semibold">Search rankings</h2>
+          <Link
+            href={`/campaign/${campaignId}/search`}
+            className="text-sm text-platform underline-offset-4 hover:underline"
+          >
+            Open mock search →
+          </Link>
+        </div>
+        {ranks.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No tracked keywords, or no simulations yet.
+          </p>
+        ) : (
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b text-left text-muted-foreground">
+                <th className="py-2 pr-4 font-medium">Keyword</th>
+                <th className="px-2 py-2 text-right font-medium">Rank</th>
+                <th className="px-2 py-2 text-right font-medium">Best</th>
+                <th className="px-2 py-2 text-right font-medium">Movement</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ranks.map((r) => {
+                const move = r.first - r.current; // + = climbed
+                return (
+                  <tr key={r.term} className="border-b">
+                    <td className="py-2 pr-4">#{r.term}</td>
+                    <td className="px-2 py-2 text-right font-medium">{r.current}</td>
+                    <td className="px-2 py-2 text-right text-muted-foreground">
+                      {r.best}
+                    </td>
+                    <td className="px-2 py-2 text-right">
+                      {move > 0 ? (
+                        <span className="text-emerald-600">▲ {move}</span>
+                      ) : move < 0 ? (
+                        <span className="text-destructive">▼ {-move}</span>
+                      ) : (
+                        <span className="text-muted-foreground">–</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </section>
     </div>
   );

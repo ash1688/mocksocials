@@ -1,4 +1,4 @@
-import { and, eq, desc } from "drizzle-orm";
+import { and, eq, desc, asc } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -116,6 +116,44 @@ export async function getCampaignDashboard(
   });
 
   return { simCount: sims.length, platformTotals, overall, targets };
+}
+
+export interface KeywordRank {
+  term: string;
+  current: number; // 1 = top of the SERP
+  first: number;
+  best: number;
+}
+
+/** Per-keyword search-rank movement over simulations (CONTEXT.md: Search
+ *  ranking; C.P7). Lower position is better. */
+export async function getKeywordRankings(
+  campaignId: string,
+): Promise<KeywordRank[]> {
+  const rows = await db
+    .select({
+      term: keywords.term,
+      position: searchRankings.position,
+      step: simulations.stepIndex,
+    })
+    .from(searchRankings)
+    .innerJoin(keywords, eq(searchRankings.keywordId, keywords.id))
+    .innerJoin(simulations, eq(searchRankings.simulationId, simulations.id))
+    .where(eq(searchRankings.campaignId, campaignId))
+    .orderBy(asc(simulations.stepIndex));
+
+  const byTerm = new Map<string, number[]>();
+  for (const r of rows) {
+    const list = byTerm.get(r.term) ?? [];
+    list.push(r.position);
+    byTerm.set(r.term, list);
+  }
+  return [...byTerm.entries()].map(([term, positions]) => ({
+    term,
+    current: positions[positions.length - 1]!,
+    first: positions[0]!,
+    best: Math.min(...positions),
+  }));
 }
 
 /** Compact analytics for the latest simulation of a campaign. Full dashboards
