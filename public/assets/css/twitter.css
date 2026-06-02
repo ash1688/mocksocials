@@ -1,0 +1,20 @@
+.platform-twitter { --primary:#1DA1F2; --primary-tint:#E1F0FA; }
+.platform-twitter button.btn-twitter, .btn-twitter { background:#1DA1F2; color:#fff; border:none; padding:8px 18px; border-radius:999px; font-weight:600; cursor:pointer; }
+.tw-layout { display:grid; grid-template-columns: 1fr 320px; gap: 18px; }
+.tw-main { min-width: 0; }
+.tw-side .card { position: sticky; top: 76px; }
+.tweet { padding: 14px; }
+.tweet-head { display:flex; gap:10px; align-items: center; }
+.tweet-head .muted { font-size: 0.88rem; }
+.tweet-body { margin-top: 8px; white-space: pre-wrap; line-height: 1.4; }
+.rt-banner { color: var(--muted); font-size: 0.85rem; margin-bottom: 6px; }
+.quoted { margin-top: 8px; }
+.note { background: #fff8d6; border:1px solid #f1d97b; color:#5a4a00; border-radius: 10px; padding: 10px 12px; margin-top: 10px; }
+html[data-theme="dark"] .note { background: #2a2410; border-color:#6a5820; color:#f0d97b; }
+.note-head { font-weight: 600; margin-bottom: 4px; font-size: 0.9rem; }
+.trend-row { display:block; padding: 8px 0; border-bottom: 1px solid var(--border); color: inherit; }
+.trend-row:last-child { border-bottom: none; }
+.trend-tag { font-weight: 600; }
+@media (max-width: 900px) {
+  .tw-layout { grid-template-columns: 1fr; }
+}
