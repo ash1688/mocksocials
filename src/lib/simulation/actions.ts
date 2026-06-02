@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -10,6 +10,8 @@ import {
   simulations,
   metricSnapshots,
   searchRankings,
+  posts,
+  comments,
 } from "@/db/schema";
 import { requireStudentWorkspace } from "@/lib/auth/guards";
 import { getCampaign } from "@/lib/campaign/queries";
@@ -51,6 +53,22 @@ export async function resetSimulation(formData: FormData): Promise<void> {
     // scoped by campaign, remove explicitly.
     await tx.delete(metricSnapshots).where(eq(metricSnapshots.campaignId, campaignId));
     await tx.delete(searchRankings).where(eq(searchRankings.campaignId, campaignId));
+    // Clear simulation-generated persona comments on this campaign's posts.
+    const postRows = await tx
+      .select({ id: posts.id })
+      .from(posts)
+      .where(eq(posts.campaignId, campaignId));
+    const postIds = postRows.map((p) => p.id);
+    if (postIds.length > 0) {
+      await tx
+        .delete(comments)
+        .where(
+          and(
+            inArray(comments.postId, postIds),
+            eq(comments.authorKind, "persona"),
+          ),
+        );
+    }
     if (simIds.length > 0) {
       await tx.delete(simulations).where(inArray(simulations.id, simIds));
     }

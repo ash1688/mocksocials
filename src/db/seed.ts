@@ -24,6 +24,7 @@ const ORG = {
 const DEMO_ACCOUNTS = [
   { username: "teacher", password: "teacher", role: "teacher" as const, displayName: "Demo Teacher" },
   { username: "student", password: "student", role: "student" as const, displayName: "Demo Student" },
+  { username: "student2", password: "student2", role: "student" as const, displayName: "Demo Student Two" },
 ];
 
 async function upsertOrganisation() {

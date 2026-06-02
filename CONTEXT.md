@@ -73,3 +73,14 @@ _Avoid_: Interaction, self-like (the Organisation never engages its own posts to
 **Seeded community**:
 Ambient persona-authored content present in a Workspace from the start, so the platforms feel populated rather than empty or as if the Organisation is the only one posting. It is background depth, not a competitor to benchmark against. Copied per Workspace so one Student's interactions never leak into another's.
 _Avoid_: Feed, backdrop
+
+**Scenario**:
+A pre-authored reenactment of a real-world social-media win or fail (e.g. #McDStories, the 2009 Domino's video, Marcus Rashford's free-school-meals campaign), used *during teaching* — typically before the assignment — to show what a good viral moment and a bad PR crisis look like on the platforms. A Scenario is **scripted playback, not a Simulation**: its content and outcome are fixed and authored, never computed from a Performance score. It is never scored, never feeds Targets, and is isolated from any Student's assessment Campaign. Scenarios live in a teaching module that can be enabled or disabled. A Scenario plays in two modes — see Documentary reveal and Response branch.
+_Avoid_: Event (too generic), Simulation (a Scenario is authored, not deterministically computed), Campaign (a Scenario is not a Student's assessed run)
+
+**Documentary reveal**:
+The teacher-led mode of a Scenario: stepping through what actually happened in the real case, shown on the platform renders as a fixed timeline. Linear and faithful — the real outcome *is* the lesson; nothing the room does changes it. The teacher deliberately **picks** which Scenario to project.
+
+**Response branch**:
+The student "have-a-go" mode of a Scenario: the Student picks a response (e.g. apologise / double down / stay silent) and one of a few pre-authored aftermaths plays, then the real outcome is revealed for comparison. The branches are authored content *selected* by a choice — personas never react to free-typed Student content, so the thread rules (ADR-0005) and determinism (ADR-0001) stay intact. Each Student is dealt a **random** Scenario from the library (the teacher may override to pin one Scenario for the whole class).
+_Avoid_: Emergent response (the crowd is never simulated against free input)

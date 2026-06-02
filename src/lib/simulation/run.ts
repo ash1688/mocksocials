@@ -4,7 +4,7 @@
  * content. Seeded noise derives from stable inputs (post id, campaign id,
  * keyword, step index) — never real time — so re-running reproduces the numbers.
  */
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -14,6 +14,8 @@ import {
   activePlatforms,
   keywords as keywordsTable,
   posts as postsTable,
+  personas as personasTable,
+  comments as commentsTable,
   campaignBaselines,
   simulations,
   postMetrics,
@@ -22,6 +24,7 @@ import {
 } from "@/db/schema";
 import { deriveSubScores, missionTerms, type PostContent } from "./derive";
 import { buildHintChips } from "./hints";
+import { buildPersonaComments } from "./persona-comments";
 import {
   performanceScore,
   projectReach,
@@ -82,22 +85,25 @@ export async function runSimulation(
       )[0]
     : undefined;
 
-  const [actives, kws, posts, baselines, priorSims] = await Promise.all([
-    db.select().from(activePlatforms).where(eq(activePlatforms.campaignId, campaignId)),
-    db.select().from(keywordsTable).where(eq(keywordsTable.campaignId, campaignId)),
-    db
-      .select()
-      .from(postsTable)
-      .where(
-        and(
-          eq(postsTable.campaignId, campaignId),
-          eq(postsTable.authorKind, "organisation"),
-          eq(postsTable.isSeeded, false),
+  const [actives, kws, posts, baselines, priorSims, personaRows] =
+    await Promise.all([
+      db.select().from(activePlatforms).where(eq(activePlatforms.campaignId, campaignId)),
+      db.select().from(keywordsTable).where(eq(keywordsTable.campaignId, campaignId)),
+      db
+        .select()
+        .from(postsTable)
+        .where(
+          and(
+            eq(postsTable.campaignId, campaignId),
+            eq(postsTable.authorKind, "organisation"),
+            eq(postsTable.isSeeded, false),
+          ),
         ),
-      ),
-    db.select().from(campaignBaselines).where(eq(campaignBaselines.campaignId, campaignId)),
-    db.select().from(simulations).where(eq(simulations.campaignId, campaignId)),
-  ]);
+      db.select().from(campaignBaselines).where(eq(campaignBaselines.campaignId, campaignId)),
+      db.select().from(simulations).where(eq(simulations.campaignId, campaignId)),
+      db.select({ id: personasTable.id }).from(personasTable).where(eq(personasTable.workspaceId, campaign.workspaceId)),
+    ]);
+  const personaIds = personaRows.map((p) => p.id);
 
   const stepIndex = priorSims.length; // 0 for the first simulation
   const days = step === "week" ? 7 : 1;
@@ -133,6 +139,21 @@ export async function runSimulation(
       .values({ campaignId, stepIndex, step, fromClock, toClock })
       .returning();
     const simId = sim!.id;
+
+    // Persona comments reflect the latest snapshot — clear and regenerate
+    // (ADR-0005 single-snapshot rule). Only persona comments are removed; any
+    // Organisation replies are Student-authored and preserved.
+    const postIds = posts.map((p) => p.id);
+    if (postIds.length > 0) {
+      await tx
+        .delete(commentsTable)
+        .where(
+          and(
+            inArray(commentsTable.postId, postIds),
+            eq(commentsTable.authorKind, "persona"),
+          ),
+        );
+    }
 
     // --- Per-post scoring ---
     for (const post of posts) {
@@ -176,6 +197,24 @@ export async function runSimulation(
         factors: result.base,
         hints: buildHintChips(content, derived, ctx),
       });
+
+      // Audience comments this post received (CONTEXT.md). Sampled + capped.
+      const personaComments = buildPersonaComments(
+        post.id,
+        stepIndex,
+        comments,
+        personaIds,
+      );
+      if (personaComments.length > 0) {
+        await tx.insert(commentsTable).values(
+          personaComments.map((c) => ({
+            postId: post.id,
+            authorKind: "persona" as const,
+            personaId: c.personaId,
+            body: c.body,
+          })),
+        );
+      }
 
       addGain(platform, "reach", reach);
       addGain(platform, "likes", likes);
