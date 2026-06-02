@@ -54,6 +54,12 @@ export default async function CampaignPage({
           <p className="mt-1 text-xs text-muted-foreground">
             Campaign clock starts {campaign.startDate}
           </p>
+          <Link
+            href={`/campaign/${campaign.id}/schedule`}
+            className="text-sm text-platform underline-offset-4 hover:underline"
+          >
+            Content schedule →
+          </Link>
         </div>
         {campaign.isActive ? (
           <span className="rounded-full bg-primary px-3 py-1 text-xs text-primary-foreground">
