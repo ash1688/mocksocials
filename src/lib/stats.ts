@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { manualStats } from "@/db/schema";
@@ -41,6 +41,96 @@ export async function getUserStats(
   for (const k of STAT_KEYS[platform]) map[k] = 0;
   for (const r of rows) map[r.statKey] = r.statValue;
   return map;
+}
+
+/** get_stat(): a single manual stat value (0 if unset). */
+export async function getStatValue(
+  userId: number,
+  platform: Platform,
+  key: string,
+): Promise<number> {
+  const row = (
+    await db
+      .select({ v: manualStats.statValue })
+      .from(manualStats)
+      .where(
+        and(
+          eq(manualStats.userId, userId),
+          eq(manualStats.platform, platform),
+          eq(manualStats.statKey, key),
+        ),
+      )
+      .limit(1)
+  )[0];
+  return row?.v ?? 0;
+}
+
+/** set_stat(): upsert a single manual stat (PHP ON DUPLICATE KEY UPDATE). */
+export async function setStat(
+  userId: number,
+  platform: Platform,
+  key: string,
+  value: number,
+): Promise<void> {
+  await db
+    .insert(manualStats)
+    .values({ userId, platform, statKey: key, statValue: value })
+    .onConflictDoUpdate({
+      target: [manualStats.userId, manualStats.platform, manualStats.statKey],
+      set: { statValue: value, updatedAt: sql`now()` },
+    });
+}
+
+export type YtProfile = "low" | "moderate" | "high" | "hyped" | "viral";
+
+/** youtube_seed(): random seed metrics for a given stats profile (helpers.php). */
+export function youtubeSeed(profile: YtProfile): {
+  views: number;
+  likes: number;
+  comments: number;
+  subBoost: number;
+} {
+  const ranges: Record<YtProfile, [number, number][]> = {
+    low: [
+      [200, 800],
+      [10, 40],
+      [2, 8],
+      [5, 20],
+    ],
+    moderate: [
+      [5000, 25000],
+      [300, 1500],
+      [50, 200],
+      [50, 300],
+    ],
+    high: [
+      [100000, 500000],
+      [8000, 40000],
+      [1000, 5000],
+      [2000, 10000],
+    ],
+    hyped: [
+      [1000000, 5000000],
+      [80000, 400000],
+      [10000, 50000],
+      [20000, 100000],
+    ],
+    viral: [
+      [10000000, 80000000],
+      [500000, 5000000],
+      [50000, 500000],
+      [100000, 2000000],
+    ],
+  };
+  const r = ranges[profile];
+  const pick = ([lo, hi]: [number, number]) =>
+    lo + Math.floor(Math.random() * (hi - lo + 1));
+  return {
+    views: pick(r[0]!),
+    likes: pick(r[1]!),
+    comments: pick(r[2]!),
+    subBoost: pick(r[3]!),
+  };
 }
 
 // CRC-32 (IEEE) — matches PHP crc32() so persona stats are stable & comparable.

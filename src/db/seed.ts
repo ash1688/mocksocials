@@ -14,6 +14,7 @@ import {
   posts,
   likes,
   comments,
+  youtubeMeta,
 } from "./schema";
 import { hashPassword } from "@/lib/auth/password";
 import { PERSONAS } from "./personas-data";
@@ -34,6 +35,25 @@ function mulberry32(seed: number) {
 const rng = mulberry32(20260602);
 const pick = <T>(arr: T[]): T => arr[Math.floor(rng() * arr.length)]!;
 const randInt = (lo: number, hi: number) => lo + Math.floor(rng() * (hi - lo + 1));
+
+// Deterministic MockTube seed metrics per stats profile (mirrors youtube_seed).
+const YT_PROFILES = ["low", "moderate", "high", "hyped", "viral"] as const;
+const YT_RANGES: Record<(typeof YT_PROFILES)[number], [number, number][]> = {
+  low: [[200, 800], [10, 40], [2, 8], [5, 20]],
+  moderate: [[5000, 25000], [300, 1500], [50, 200], [50, 300]],
+  high: [[100000, 500000], [8000, 40000], [1000, 5000], [2000, 10000]],
+  hyped: [[1000000, 5000000], [80000, 400000], [10000, 50000], [20000, 100000]],
+  viral: [[10000000, 80000000], [500000, 5000000], [50000, 500000], [100000, 2000000]],
+};
+function ytMetrics(profile: (typeof YT_PROFILES)[number]) {
+  const r = YT_RANGES[profile];
+  return {
+    views: randInt(r[0]![0], r[0]![1]),
+    likes: randInt(r[1]![0], r[1]![1]),
+    comments: randInt(r[2]![0], r[2]![1]),
+    subBoost: randInt(r[3]![0], r[3]![1]),
+  };
+}
 
 // --- Content pools (ported / adapted from sql/seed_*.sql) ---------------------
 const POOLS: Record<Platform, string[]> = {
@@ -173,7 +193,8 @@ async function main() {
         .values({
           fakeUserId: authorId,
           platform,
-          content: pool[i]!,
+          // MockTube: title lives in youtube_meta; the post body is the description.
+          content: platform === "youtube" ? "" : pool[i]!,
           imageUrl:
             platform === "instagram"
               ? `https://picsum.photos/seed/${platform}-${i}/600/600`
@@ -181,6 +202,24 @@ async function main() {
         })
         .returning({ id: posts.id });
       const post = rows[0]!;
+
+      // MockTube videos need a youtube_meta row (feed INNER JOINs it).
+      if (platform === "youtube") {
+        const profile = YT_PROFILES[i % YT_PROFILES.length]!;
+        const m = ytMetrics(profile);
+        await db.insert(youtubeMeta).values({
+          postId: post.id,
+          videoTitle: pool[i]!,
+          thumbnailUrl: `https://picsum.photos/seed/yt-${i}/640/360`,
+          durationDisplay: `${randInt(2, 18)}:${String(randInt(0, 59)).padStart(2, "0")}`,
+          statsProfile: profile,
+          premiumViewPct: randInt(25, 30),
+          seedViews: m.views,
+          seedLikes: m.likes,
+          seedComments: m.comments,
+          seedSubBoost: m.subBoost,
+        });
+      }
 
       // Likes from a deterministic subset of personas (no self-like).
       const likers = personaIds
