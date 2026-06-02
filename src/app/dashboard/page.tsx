@@ -32,11 +32,19 @@ export default async function DashboardPage() {
             <p className="text-sm text-muted-foreground">@{org.handle}</p>
           ) : null}
         </div>
-        <form action={logout}>
-          <Button variant="outline" type="submit">
-            Sign out
-          </Button>
-        </form>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/analytics"
+            className="text-sm text-platform underline-offset-4 hover:underline"
+          >
+            Analysis →
+          </Link>
+          <form action={logout}>
+            <Button variant="outline" type="submit">
+              Sign out
+            </Button>
+          </form>
+        </div>
       </header>
 
       <section className="flex flex-col gap-3">

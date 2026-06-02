@@ -232,7 +232,7 @@ export default async function CampaignPage({
         campaignId={campaign.id}
         isActive={campaign.isActive}
         clock={campaign.clock}
-        summary={simSummary}
+        simCount={simSummary.simCount}
       />
     </main>
   );

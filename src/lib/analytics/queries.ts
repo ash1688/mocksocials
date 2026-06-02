@@ -8,9 +8,11 @@ import {
   searchRankings,
   posts,
   keywords,
+  activePlatforms,
 } from "@/db/schema";
-import type { Platform } from "@/lib/simulation/types";
-import type { Metric } from "@/lib/campaign/constants";
+import { targets as targetsTable } from "@/db/schema";
+import { PLATFORMS, type Platform } from "@/lib/simulation/types";
+import { METRICS, type Metric } from "@/lib/campaign/constants";
 import type { HintChip } from "@/lib/simulation/hints";
 
 export interface SimSummary {
@@ -31,6 +33,89 @@ export interface SimSummary {
   }[];
   /** latest search-ranking position per keyword */
   rankings: { term: string; position: number }[];
+}
+
+export interface TargetProgress {
+  metric: Metric;
+  platform: Platform | null; // null = overall
+  targetValue: number;
+  actual: number;
+}
+
+export interface CampaignDashboard {
+  simCount: number;
+  /** Active platforms, with each metric's latest-snapshot value. */
+  platformTotals: { platform: Platform; metrics: Record<Metric, number> }[];
+  /** Overall (summed across active platforms) per metric. */
+  overall: Record<Metric, number>;
+  /** Targets with their actual-vs-target progress (CONTEXT.md: Target). */
+  targets: TargetProgress[];
+}
+
+const emptyMetrics = (): Record<Metric, number> =>
+  Object.fromEntries(METRICS.map((m) => [m, 0])) as Record<Metric, number>;
+
+/**
+ * Workspace-level analysis for one campaign (ADR-0005): actual-vs-target per
+ * platform and overall, read from the campaign's single latest snapshot.
+ */
+export async function getCampaignDashboard(
+  campaignId: string,
+): Promise<CampaignDashboard> {
+  const sims = await db
+    .select({ id: simulations.id })
+    .from(simulations)
+    .where(eq(simulations.campaignId, campaignId))
+    .orderBy(desc(simulations.stepIndex));
+  const latest = sims[0];
+
+  const [actives, tgts, snaps] = await Promise.all([
+    db
+      .select({ platform: activePlatforms.platform })
+      .from(activePlatforms)
+      .where(eq(activePlatforms.campaignId, campaignId)),
+    db.select().from(targetsTable).where(eq(targetsTable.campaignId, campaignId)),
+    latest
+      ? db
+          .select()
+          .from(metricSnapshots)
+          .where(
+            and(
+              eq(metricSnapshots.campaignId, campaignId),
+              eq(metricSnapshots.simulationId, latest.id),
+            ),
+          )
+      : Promise.resolve([]),
+  ]);
+
+  // value[platform][metric]
+  const value = new Map<string, number>();
+  for (const s of snaps) value.set(`${s.platform}:${s.metric}`, s.value);
+  const valueOf = (p: Platform, m: Metric) => value.get(`${p}:${m}`) ?? 0;
+
+  const activePlats = actives
+    .map((a) => a.platform as Platform)
+    .sort((a, b) => PLATFORMS.indexOf(a) - PLATFORMS.indexOf(b));
+
+  const platformTotals = activePlats.map((platform) => {
+    const metrics = emptyMetrics();
+    for (const m of METRICS) metrics[m] = valueOf(platform, m);
+    return { platform, metrics };
+  });
+
+  const overall = emptyMetrics();
+  for (const m of METRICS)
+    overall[m] = activePlats.reduce((sum, p) => sum + valueOf(p, m), 0);
+
+  const targets: TargetProgress[] = tgts.map((t) => {
+    const metric = t.metric as Metric;
+    const actual = t.platform
+      ? valueOf(t.platform as Platform, metric)
+      : overall[metric];
+    return { metric, platform: (t.platform as Platform) ?? null, targetValue: t.targetValue, actual };
+  });
+
+  return { simCount: sims.length, platformTotals, overall, targets };
 }
 
 /** Compact analytics for the latest simulation of a campaign. Full dashboards
