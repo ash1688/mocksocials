@@ -10,6 +10,7 @@ import {
   simulations,
   organisations,
   workspaces,
+  orgLikes,
 } from "@/db/schema";
 import type { Platform } from "@/lib/simulation/types";
 import type { HintChip } from "@/lib/simulation/hints";
@@ -100,6 +101,22 @@ export async function getPlatformFeed(
     .orderBy(desc(posts.publishedOn), desc(posts.createdAt));
 
   return rows.map((r) => toFeedPost(r));
+}
+
+/** The posts/comments the Organisation has liked in this Workspace (for toggle
+ *  state on the renders). Likes are workspace-unique per target. */
+export async function getOrgLikedSets(workspaceId: string): Promise<{
+  posts: Set<string>;
+  comments: Set<string>;
+}> {
+  const rows = await db
+    .select({ postId: orgLikes.postId, commentId: orgLikes.commentId })
+    .from(orgLikes)
+    .where(eq(orgLikes.workspaceId, workspaceId));
+  return {
+    posts: new Set(rows.filter((r) => r.postId).map((r) => r.postId!)),
+    comments: new Set(rows.filter((r) => r.commentId).map((r) => r.commentId!)),
+  };
 }
 
 /** Latest-snapshot audience figure for a platform header (followers/subscribers). */

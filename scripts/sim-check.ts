@@ -8,7 +8,7 @@
  * Run: npm run sim:check
  */
 import "dotenv/config";
-import { and, eq, asc, desc } from "drizzle-orm";
+import { and, eq, asc, desc, inArray } from "drizzle-orm";
 
 import { db } from "../src/db";
 import {
@@ -17,6 +17,8 @@ import {
   metricSnapshots,
   searchRankings,
   postMetrics,
+  posts,
+  comments,
 } from "../src/db/schema";
 import { runSimulation } from "../src/lib/simulation/run";
 
@@ -30,6 +32,9 @@ async function reset(campaignId: string) {
   await db.update(campaigns).set({ isActive: true, clock: c.startDate }).where(eq(campaigns.id, campaignId));
   await db.delete(metricSnapshots).where(eq(metricSnapshots.campaignId, campaignId));
   await db.delete(searchRankings).where(eq(searchRankings.campaignId, campaignId));
+  const postRows = await db.select({ id: posts.id }).from(posts).where(eq(posts.campaignId, campaignId));
+  const postIds = postRows.map((p) => p.id);
+  if (postIds.length > 0) await db.delete(comments).where(inArray(comments.postId, postIds));
   await db.delete(simulations).where(eq(simulations.campaignId, campaignId));
 }
 

@@ -1,18 +1,19 @@
 /**
  * Deterministic persona comments on the Organisation's posts (CONTEXT.md: the
- * audience reacts to content). The Simulation generates these — they are
- * engagement the Organisation *receives*, not Student-authored. A representative
- * SAMPLE is rendered (a post can show "12 comments" but list only a few), and
- * they are regenerated each simulation to reflect the latest snapshot (ADR-0005
- * single-snapshot rule). Threads cap at one level; personas never reply to the
- * Organisation (CONTEXT.md), so these are always top-level.
+ * audience reacts to content). The Simulation generates these — engagement the
+ * Organisation *receives*, not Student-authored. A representative SAMPLE is
+ * materialised (a post can show "12 comments" but list a few). Threads cap at
+ * one level; personas never reply to the Organisation (CONTEXT.md).
  *
- * Deterministic: persona + wording derive from (post id, step index, index),
- * never wall-clock — reproducible for screenshots (ADR-0001).
+ * Ids are DETERMINISTIC (derived from post id + slot) and STABLE across
+ * simulations, so the Organisation's replies (parentId) and comment likes
+ * survive re-simulation. Re-running reproduces the same rows (ADR-0001);
+ * comments are upserted, not regenerated.
  */
+import { createHash } from "node:crypto";
+
 import { hashSeed } from "./rng";
 
-/** Max comment rows materialised per post (the displayed count can be higher). */
 const MAX_SAMPLE = 3;
 
 const TEMPLATES = [
@@ -26,30 +27,37 @@ const TEMPLATES = [
   "Sharing with my college group!",
 ];
 
+/** A stable UUID derived from arbitrary parts (SHA-1 → uuid layout). */
+export function deterministicUuid(...parts: (string | number)[]): string {
+  const h = createHash("sha1").update(parts.join("|")).digest("hex").slice(0, 32);
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
+}
+
 export interface GeneratedComment {
+  id: string;
   personaId: string;
   body: string;
 }
 
-/** Build the sampled persona comments for one post. `commentCount` is the
- *  simulation's comment number for the post; the sample size is capped. */
+/** Build the sampled persona comments for one post. Stable ids + wording so
+ *  re-simulation upserts the same rows. */
 export function buildPersonaComments(
   postId: string,
-  stepIndex: number,
   commentCount: number,
   personaIds: string[],
 ): GeneratedComment[] {
   if (commentCount <= 0 || personaIds.length === 0) return [];
   const sample = Math.min(commentCount, MAX_SAMPLE, personaIds.length);
-  // Distinct persona + wording within a post: offset from a seeded base, then
-  // step by i. 3 is coprime to the 8 templates, so small samples never repeat.
-  const baseP = hashSeed(postId, stepIndex, "p") % personaIds.length;
-  const baseB = hashSeed(postId, stepIndex, "b") % TEMPLATES.length;
+  // Distinct persona + wording within a post; 3 is coprime to the 8 templates.
+  const baseP = hashSeed(postId, "p") % personaIds.length;
+  const baseB = hashSeed(postId, "b") % TEMPLATES.length;
   const out: GeneratedComment[] = [];
   for (let i = 0; i < sample; i++) {
-    const persona = personaIds[(baseP + i) % personaIds.length]!;
-    const body = TEMPLATES[(baseB + i * 3) % TEMPLATES.length]!;
-    out.push({ personaId: persona, body });
+    out.push({
+      id: deterministicUuid(postId, "comment", i),
+      personaId: personaIds[(baseP + i) % personaIds.length]!,
+      body: TEMPLATES[(baseB + i * 3) % TEMPLATES.length]!,
+    });
   }
   return out;
 }

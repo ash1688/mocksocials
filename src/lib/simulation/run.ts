@@ -4,7 +4,7 @@
  * content. Seeded noise derives from stable inputs (post id, campaign id,
  * keyword, step index) — never real time — so re-running reproduces the numbers.
  */
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -140,21 +140,6 @@ export async function runSimulation(
       .returning();
     const simId = sim!.id;
 
-    // Persona comments reflect the latest snapshot — clear and regenerate
-    // (ADR-0005 single-snapshot rule). Only persona comments are removed; any
-    // Organisation replies are Student-authored and preserved.
-    const postIds = posts.map((p) => p.id);
-    if (postIds.length > 0) {
-      await tx
-        .delete(commentsTable)
-        .where(
-          and(
-            inArray(commentsTable.postId, postIds),
-            eq(commentsTable.authorKind, "persona"),
-          ),
-        );
-    }
-
     // --- Per-post scoring ---
     for (const post of posts) {
       const platform = post.platform as Platform;
@@ -198,22 +183,23 @@ export async function runSimulation(
         hints: buildHintChips(content, derived, ctx),
       });
 
-      // Audience comments this post received (CONTEXT.md). Sampled + capped.
-      const personaComments = buildPersonaComments(
-        post.id,
-        stepIndex,
-        comments,
-        personaIds,
-      );
+      // Audience comments this post received (CONTEXT.md). Sampled + capped,
+      // with stable ids so re-simulation upserts the same rows (and the Org's
+      // replies/likes survive). Upsert — never destroy Student-authored data.
+      const personaComments = buildPersonaComments(post.id, comments, personaIds);
       if (personaComments.length > 0) {
-        await tx.insert(commentsTable).values(
-          personaComments.map((c) => ({
-            postId: post.id,
-            authorKind: "persona" as const,
-            personaId: c.personaId,
-            body: c.body,
-          })),
-        );
+        await tx
+          .insert(commentsTable)
+          .values(
+            personaComments.map((c) => ({
+              id: c.id,
+              postId: post.id,
+              authorKind: "persona" as const,
+              personaId: c.personaId,
+              body: c.body,
+            })),
+          )
+          .onConflictDoNothing();
       }
 
       addGain(platform, "reach", reach);

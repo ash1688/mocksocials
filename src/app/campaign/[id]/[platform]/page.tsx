@@ -6,6 +6,7 @@ import {
   getPlatformFeed,
   getPlatformAudience,
   getOrganisationForWorkspace,
+  getOrgLikedSets,
 } from "@/lib/render/queries";
 import { PLATFORMS, type Platform } from "@/lib/simulation/types";
 import { PLATFORM_META } from "@/lib/render/platform-meta";
@@ -29,14 +30,17 @@ export default async function PlatformRenderPage({
   const campaign = await getCampaign(id, workspace.id);
   if (!campaign) notFound();
 
-  const [org, audience, feed, platformActive] = await Promise.all([
+  const [org, audience, feed, platformActive, liked] = await Promise.all([
     getOrganisationForWorkspace(workspace.id),
     getPlatformAudience(id, platform),
     getPlatformFeed(id, workspace.id, platform),
     isPlatformActive(id, platform),
+    getOrgLikedSets(workspace.id),
   ]);
   // Compose only on the Active campaign's enabled platforms (ADR-0005).
   const canCompose = campaign.isActive && platformActive;
+  // Like community content only on the Active campaign (ADR-0005).
+  const engageable = campaign.isActive;
 
   const orgName = org?.name ?? "Organisation";
   const orgHandle = org?.handle ?? "organisation";
@@ -72,6 +76,8 @@ export default async function PlatformRenderPage({
               campaignId={id}
               orgName={orgName}
               orgHandle={orgHandle}
+              engageable={engageable}
+              liked={liked.posts.has(post.id)}
             />
           ))}
         </div>

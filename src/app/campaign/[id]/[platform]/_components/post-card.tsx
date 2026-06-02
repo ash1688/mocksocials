@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { DAY_LABELS, formatMinute } from "@/lib/posts/constants";
+import { toggleOrgLike } from "@/lib/engagement/actions";
 import type { Platform } from "@/lib/simulation/types";
 import type { FeedPost } from "@/lib/render/queries";
 import { PostMedia } from "./post-media";
@@ -19,13 +20,20 @@ export function PostCard({
   campaignId,
   orgName,
   orgHandle,
+  engageable = false,
+  liked = false,
 }: {
   post: FeedPost;
   platform: Platform;
   campaignId: string;
   orgName: string;
   orgHandle: string;
+  // The Organisation can like community (persona) posts on the active campaign;
+  // never its own posts (ADR-0005 anti-cheat).
+  engageable?: boolean;
+  liked?: boolean;
 }) {
+  const canLike = engageable && post.authorKind === "persona";
   const author = authorLine(post, orgName, orgHandle);
   const stamp =
     post.postingDay !== null && post.postingMinute !== null
@@ -65,11 +73,29 @@ export function PostCard({
       </Link>
 
       <footer className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-        <span>♥ {post.likes.toLocaleString()}</span>
-        <span>↻ {post.shares.toLocaleString()}</span>
-        <span>💬 {post.comments.toLocaleString()}</span>
+        {canLike ? (
+          <form action={toggleOrgLike}>
+            <input type="hidden" name="campaignId" value={campaignId} />
+            <input type="hidden" name="platform" value={platform} />
+            <input type="hidden" name="targetType" value="post" />
+            <input type="hidden" name="targetId" value={post.id} />
+            <button
+              type="submit"
+              className={liked ? "text-platform" : "hover:text-foreground"}
+              title={liked ? "Unlike" : "Like as the Organisation"}
+            >
+              {liked ? "♥ Liked" : "♡ Like"}
+            </button>
+          </form>
+        ) : (
+          <span>♥ {post.likes.toLocaleString()}</span>
+        )}
         {post.authorKind === "organisation" ? (
-          <span className="ml-auto">{post.reach.toLocaleString()} reach</span>
+          <>
+            <span>↻ {post.shares.toLocaleString()}</span>
+            <span>💬 {post.comments.toLocaleString()}</span>
+            <span className="ml-auto">{post.reach.toLocaleString()} reach</span>
+          </>
         ) : null}
       </footer>
 
