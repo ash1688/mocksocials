@@ -76,6 +76,41 @@ function PostCard({ p }: { p: ScenarioPost }) {
   );
 }
 
+/** MockTube beat → native video card (faithful .yt-card) + the text as the
+ *  video description, so the combined feed mixes real-looking platforms. */
+function YtCard({ p }: { p: ScenarioPost }) {
+  const c = AV_COLORS[p.av];
+  const thumb = `https://picsum.photos/seed/${encodeURIComponent(p.videoTitle ?? p.handle)}/640/360`;
+  return (
+    <div className="scn-yt-wrap">
+      <div className="yt-card scn-yt">
+        <div className="yt-thumb">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={thumb} alt="" />
+          <span className="yt-duration">{p.duration ?? "10:00"}</span>
+          <span className="yt-play">▶</span>
+        </div>
+        <div className="yt-meta">
+          <div
+            className="avatar scn-avatar scn-yt-av"
+            style={{ background: c.bg, color: c.color }}
+          >
+            {p.initials}
+          </div>
+          <div>
+            <div className="yt-title">{p.videoTitle ?? p.text.slice(0, 60)}</div>
+            <div className="muted small">
+              {p.name} · <span className="scn-mocktube">MockTube</span>
+            </div>
+            <div className="muted small">{fmtNum(p.likes)} views</div>
+          </div>
+        </div>
+      </div>
+      <div className="scn-yt-desc">{highlight(p.text)}</div>
+    </div>
+  );
+}
+
 function BeatCard({ beat }: { beat: Beat }) {
   if (beat.type === "trend") {
     return (
@@ -105,6 +140,8 @@ function BeatCard({ beat }: { beat: Beat }) {
       </div>
     );
   }
+  // beat.type === "post" — render in the post's native platform style.
+  if (beat.platform === "MockTube") return <YtCard p={beat} />;
   return <PostCard p={beat} />;
 }
 
@@ -166,7 +203,7 @@ export function ScenarioPlayer({ scenario }: { scenario: Scenario }) {
         {/* Pre-existing ambient posts (the feed before the story breaks). */}
         <div className="scn-pre">
           {scenario.prePosts.map((p, i) => (
-            <PostCard key={`pre-${i}`} p={p} />
+            <BeatCard key={`pre-${i}`} beat={p} />
           ))}
         </div>
 
@@ -237,6 +274,16 @@ const SCN_CSS = `
 
 @keyframes scnUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 .scn-reveal { opacity: 0; animation: scnUp .4s ease forwards; }
+
+/* MockTube native card in the combined feed */
+.scn-yt-wrap { margin-bottom: 8px; }
+.scn-yt { display: block; margin-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.scn-yt-av { width: 36px; height: 36px; font-size: 12px; }
+.scn-yt-desc {
+  background: var(--card-bg); border: 1px solid var(--border); border-top: none;
+  border-radius: 0 0 12px 12px; padding: 12px 14px; font-size: 14px;
+  line-height: 1.5; white-space: pre-wrap; color: var(--text);
+}
 
 .scn-trend { border-left: 3px solid var(--primary); }
 .scn-trend-tag { font-size: 18px; font-weight: 600; color: var(--primary); margin: 4px 0; }
