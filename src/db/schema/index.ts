@@ -7,3 +7,4 @@ export * from "./personas";
 export * from "./groups";
 export * from "./stats";
 export * from "./posts";
+export * from "./campaign";

@@ -8,6 +8,13 @@
       "when": 1780648795919,
       "tag": "0000_purple_firebird",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780651109751,
+      "tag": "0001_closed_storm",
+      "breakpoints": true
     }
   ]
 }

@@ -6,6 +6,7 @@ import {
   smallint,
   varchar,
   text,
+  boolean,
   timestamp,
   unique,
   index,
@@ -16,6 +17,7 @@ import { platformEnum, noteStatusEnum, ytStatsProfileEnum } from "./enums";
 import { users } from "./users";
 import { fakeUsers } from "./personas";
 import { groups } from "./groups";
+import { campaigns } from "./campaign";
 
 /**
  * A post on any platform (PHP `posts`). Authored by EITHER a real user
@@ -41,12 +43,20 @@ export const posts = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    // --- Campaign overlay (nullable; set only on campaign-tagged posts) ---
+    campaignId: integer("campaign_id").references(() => campaigns.id, {
+      onDelete: "set null",
+    }),
+    postingDay: integer("posting_day"), // 0 = Mon .. 6 = Sun
+    postingMinute: integer("posting_minute"), // minutes since midnight
+    callToAction: boolean("call_to_action").notNull().default(false),
   },
   (t) => [
     index("idx_platform_created").on(t.platform, t.createdAt),
     index("posts_user_idx").on(t.userId),
     index("posts_parent_idx").on(t.parentId),
     index("posts_group_idx").on(t.groupId),
+    index("posts_campaign_idx").on(t.campaignId),
   ],
 );
 

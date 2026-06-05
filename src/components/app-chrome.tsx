@@ -60,6 +60,7 @@ export function AppChrome({
           alt=""
         />
         <span>{user.displayName}</span>
+        <Link href="/campaigns">Campaigns</Link>
         {user.isAdmin ? <Link href="/admin">Admin</Link> : null}
         <form action={logout} style={{ display: "inline" }}>
           <button

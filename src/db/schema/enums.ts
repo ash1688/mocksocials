@@ -25,3 +25,17 @@ export const ytStatsProfileEnum = pgEnum("yt_stats_profile", [
   "hyped",
   "viral",
 ]);
+
+// --- Campaign / simulation layer (overlay on the faithful base) --------------
+
+/** Metrics a Target can be set against / the simulation accrues. */
+export const metricEnum = pgEnum("metric", [
+  "followers",
+  "likes",
+  "shares",
+  "reach",
+  "comments",
+]);
+
+/** Simulation step granularity (Campaign clock advance). */
+export const simStepEnum = pgEnum("sim_step", ["day", "week"]);
