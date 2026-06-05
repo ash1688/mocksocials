@@ -11,8 +11,11 @@ import {
   campaignBaselines,
   keywords,
   targets,
+  posts,
+  youtubeMeta,
 } from "@/db/schema";
 import { requireUser } from "@/lib/auth/guards";
+import { youtubeSeed, type YtProfile } from "@/lib/stats";
 import { getCampaign } from "./queries";
 import { SCENARIO_START_DATE, METRICS, isPlatform, isMetric } from "./constants";
 
@@ -159,4 +162,85 @@ export async function removeTarget(formData: FormData): Promise<void> {
     .delete(targets)
     .where(and(eq(targets.id, targetId), eq(targets.campaignId, campaignId)));
   revalidatePath(`/campaign/${campaignId}`);
+}
+
+/** Parse "HH:MM" into minutes since midnight, or null. */
+function toMinutes(v: string): number | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(v.trim());
+  if (!m) return null;
+  const mins = Number(m[1]) * 60 + Number(m[2]);
+  return mins >= 0 && mins < 1440 ? mins : null;
+}
+
+/**
+ * C2 composer: publish a real post into the shared feed AND tag it to the
+ * active campaign with the scoring metadata the simulation reads. The post is
+ * authored by the student (their own account), so it appears like any other.
+ */
+export async function publishCampaignPost(formData: FormData): Promise<void> {
+  const campaignId = Number(formData.get("campaignId"));
+  const { ownerId } = await ownedCampaign(campaignId);
+  const platform = String(formData.get("platform") ?? "");
+  if (!isPlatform(platform)) redirect(`/campaign/${campaignId}/compose`);
+
+  // Only allow posting to a platform enabled on this campaign.
+  const enabled = (
+    await db
+      .select({ p: activePlatforms.platform })
+      .from(activePlatforms)
+      .where(
+        and(
+          eq(activePlatforms.campaignId, campaignId),
+          eq(activePlatforms.platform, platform),
+        ),
+      )
+      .limit(1)
+  )[0];
+  if (!enabled) redirect(`/campaign/${campaignId}/compose`);
+
+  const content = String(formData.get("content") ?? "").trim();
+  const imageUrl = String(formData.get("image_url") ?? "").trim();
+  const dayRaw = String(formData.get("posting_day") ?? "");
+  const postingDay = dayRaw === "" ? null : Number(dayRaw);
+  const postingMinute = toMinutes(String(formData.get("posting_time") ?? ""));
+  const callToAction = !!formData.get("call_to_action");
+
+  if (!content && !imageUrl) redirect(`/campaign/${campaignId}/compose`);
+
+  const created = (
+    await db
+      .insert(posts)
+      .values({
+        userId: ownerId,
+        platform,
+        content,
+        imageUrl,
+        campaignId,
+        postingDay,
+        postingMinute,
+        callToAction,
+      })
+      .returning({ id: posts.id })
+  )[0]!;
+
+  // MockTube posts need youtube_meta to render in the faithful feed.
+  if (platform === "youtube") {
+    const profile = (String(formData.get("stats_profile") ?? "low") ||
+      "low") as YtProfile;
+    const seed = youtubeSeed(profile);
+    await db.insert(youtubeMeta).values({
+      postId: created.id,
+      videoTitle: String(formData.get("title") ?? "").trim() || content.slice(0, 80) || "Untitled",
+      thumbnailUrl: imageUrl || "",
+      durationDisplay: String(formData.get("duration") ?? "").trim() || "10:00",
+      statsProfile: profile,
+      premiumViewPct: 27,
+      seedViews: seed.views,
+      seedLikes: seed.likes,
+      seedComments: seed.comments,
+      seedSubBoost: seed.subBoost,
+    });
+  }
+
+  redirect(`/campaign/${campaignId}/compose`);
 }

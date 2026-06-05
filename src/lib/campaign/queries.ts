@@ -6,6 +6,7 @@ import {
   activePlatforms,
   keywords,
   targets,
+  posts,
 } from "@/db/schema";
 import type { Platform } from "@/lib/stats";
 
@@ -86,4 +87,36 @@ export async function getCampaignSetup(
     keywords: kws,
     targets: tgts.map((t) => ({ ...t, platform: t.platform as Platform | null })),
   };
+}
+
+export type CampaignPost = {
+  id: number;
+  platform: Platform;
+  content: string | null;
+  imageUrl: string | null;
+  postingDay: number | null;
+  postingMinute: number | null;
+  callToAction: boolean;
+  createdAt: Date;
+};
+
+/** Posts tagged to a campaign (the student's campaign content), newest first. */
+export async function getCampaignPosts(
+  campaignId: number,
+): Promise<CampaignPost[]> {
+  const rows = await db
+    .select({
+      id: posts.id,
+      platform: posts.platform,
+      content: posts.content,
+      imageUrl: posts.imageUrl,
+      postingDay: posts.postingDay,
+      postingMinute: posts.postingMinute,
+      callToAction: posts.callToAction,
+      createdAt: posts.createdAt,
+    })
+    .from(posts)
+    .where(eq(posts.campaignId, campaignId))
+    .orderBy(desc(posts.createdAt));
+  return rows.map((r) => ({ ...r, platform: r.platform as Platform }));
 }
