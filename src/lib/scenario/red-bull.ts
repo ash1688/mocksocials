@@ -47,7 +47,16 @@ export interface ImpactCard {
   stats: { num: string; label: string }[];
 }
 
-export type Beat = ScenarioPost | TrendCard | ImpactCard;
+/** The closing verdict — the documentary's conclusion (its own final slide). */
+export interface VerdictCard {
+  type: "verdict";
+  tone: "win" | "fail" | "cautionary";
+  label: string; // e.g. "The Verdict"
+  heading: string;
+  body: string;
+}
+
+export type Beat = ScenarioPost | TrendCard | ImpactCard | VerdictCard;
 
 export interface ScenarioSection {
   label: string;
@@ -135,6 +144,15 @@ export const RED_BULL_SCENARIO: Scenario = {
         { type: "post", name: "Craig Slater", handle: "@CraigSlaterSky", av: "journo", initials: "CS", verified: true, text: "Confirmed departures from Red Bull, for the record: Adrian Newey to Aston Martin. Jonathan Wheatley gone. Rob Marshall to McLaren. Will Courtenay to McLaren. And in time, the team principal and senior leadership too. The most dominant team of its era is being dismantled from the inside.", likes: 62100, rts: 38600, platform: "MockTweet" },
         { type: "post", name: "Martin Brundle", handle: "@MBrundleF1", av: "journo", initials: "MB", verified: true, text: "People will debate the rights and wrongs of this story for years. But the racing lesson is simple: a team is not a building or a budget. It's people, and the trust between them. Lose that, and no amount of money buys it back overnight. Red Bull are learning that the hard way.", likes: 54800, rts: 31200, platform: "MockTweet" },
         { type: "post", name: "RockerPoweredMohawk", handle: "@RPM_racing", av: "creator", initials: "RP", creator: true, text: "final thought on THE HORNDOG FILES: I made content about this for months and the honest truth is most of what went viral was never confirmed. the REAL story — a great team tearing itself apart and the best people walking out the door — was sitting right there the whole time. don't let the noise bury the facts. peace ✌️ #HorndogFiles", likes: 124000, rts: 61800, platform: "MockTube", videoTitle: "THE HORNDOG FILES — Final Word", duration: "15:33" },
+      ],
+    },
+    {
+      label: "The Verdict",
+      gap: 1400,
+      posts: [
+        { type: "verdict", tone: "cautionary", label: "The Verdict",
+          heading: "When the Noise Buried the Facts",
+          body: "The investigation was only the spark. The lasting damage was an exodus of talent and trust — and most of what actually went viral was never confirmed. A leak doesn't establish truth; it just stops a fair process doing its job quietly. The lesson: in a crisis, the loudest narrative is rarely the truest. Separate what's confirmed from what's merely circulating, and remember that a team isn't a building or a budget — it's people, and the trust between them." },
         { type: "impact", title: "When the Noise Buried the Facts", stats: [
           { num: "6+", label: "Senior figures who left in the fallout" },
           { num: "480K", label: "Posts about an unconfirmed leak" },

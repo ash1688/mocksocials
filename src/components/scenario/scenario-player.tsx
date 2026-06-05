@@ -124,6 +124,17 @@ function BeatCard({ beat }: { beat: Beat }) {
       </div>
     );
   }
+  if (beat.type === "verdict") {
+    return (
+      <div className={`card scn-verdict scn-verdict-${beat.tone}`}>
+        <div className="scn-verdict-label">
+          {beat.label} · {beat.tone}
+        </div>
+        <div className="scn-verdict-heading">{beat.heading}</div>
+        <div className="scn-verdict-body">{beat.body}</div>
+      </div>
+    );
+  }
   if (beat.type === "impact") {
     return (
       <div className="card scn-impact">
@@ -287,6 +298,15 @@ const SCN_CSS = `
 
 .scn-trend { border-left: 3px solid var(--primary); }
 .scn-trend-tag { font-size: 18px; font-weight: 600; color: var(--primary); margin: 4px 0; }
+
+/* Verdict (closing slide) */
+.scn-verdict { border-left: 4px solid var(--muted); }
+.scn-verdict-cautionary { border-left-color: #d98a1a; }
+.scn-verdict-win { border-left-color: #1c7a3e; }
+.scn-verdict-fail { border-left-color: var(--danger); }
+.scn-verdict-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.scn-verdict-heading { font-size: 20px; font-weight: 700; margin: 6px 0 10px; }
+.scn-verdict-body { font-size: 14px; line-height: 1.7; color: var(--text); }
 
 .scn-impact { background: linear-gradient(135deg, #0f2027, #1a3a4a); border-color: #1d4a5e; color: #fff; }
 .scn-impact-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #4a9db5; font-weight: 600; }
