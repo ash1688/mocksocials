@@ -179,7 +179,7 @@ function toMinutes(v: string): number | null {
  */
 export async function publishCampaignPost(formData: FormData): Promise<void> {
   const campaignId = Number(formData.get("campaignId"));
-  const { ownerId } = await ownedCampaign(campaignId);
+  const { ownerId, campaign } = await ownedCampaign(campaignId);
   const platform = String(formData.get("platform") ?? "");
   if (!isPlatform(platform)) redirect(`/campaign/${campaignId}/compose`);
 
@@ -219,6 +219,8 @@ export async function publishCampaignPost(formData: FormData): Promise<void> {
         postingDay,
         postingMinute,
         callToAction,
+        // Stamp the campaign clock at publish so freshness/fatigue work.
+        campaignPublishedOn: campaign.clock,
       })
       .returning({ id: posts.id })
   )[0]!;

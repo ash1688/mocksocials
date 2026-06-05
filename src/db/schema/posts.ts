@@ -8,6 +8,7 @@ import {
   text,
   boolean,
   timestamp,
+  date,
   unique,
   index,
   type AnyPgColumn,
@@ -50,6 +51,8 @@ export const posts = pgTable(
     postingDay: integer("posting_day"), // 0 = Mon .. 6 = Sun
     postingMinute: integer("posting_minute"), // minutes since midnight
     callToAction: boolean("call_to_action").notNull().default(false),
+    // Campaign-clock date the post was published on (for freshness/fatigue).
+    campaignPublishedOn: date("campaign_published_on"),
   },
   (t) => [
     index("idx_platform_created").on(t.platform, t.createdAt),

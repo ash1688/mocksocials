@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 
 import { requireUser } from "@/lib/auth/guards";
 import { AppChrome } from "@/components/app-chrome";
-import { getCampaign, getCampaignSetup } from "@/lib/campaign/queries";
+import { getCampaign, getCampaignSetup, getSimCount } from "@/lib/campaign/queries";
+import { simulateStep, resetSimulation } from "@/lib/simulation/actions";
 import {
   activateCampaign,
   toggleActivePlatform,
@@ -29,7 +30,10 @@ export default async function CampaignSetupPage({
   const { id } = await params;
   const campaign = await getCampaign(Number(id), me.id);
   if (!campaign) notFound();
-  const setup = await getCampaignSetup(campaign.id);
+  const [setup, simCount] = await Promise.all([
+    getCampaignSetup(campaign.id),
+    getSimCount(campaign.id),
+  ]);
   const active = new Set(setup.platforms);
 
   return (
@@ -60,6 +64,37 @@ export default async function CampaignSetupPage({
             <Link className="btn-outline" href={`/campaign/${campaign.id}/analytics`}>
               Analytics
             </Link>
+          </div>
+        </div>
+
+        <div className="card">
+          <h3>Simulation</h3>
+          <p className="muted small">
+            Clock: <strong>{campaign.clock}</strong> · {simCount} simulation
+            {simCount === 1 ? "" : "s"} run.{" "}
+            {!campaign.isActive ? "Make the campaign active to simulate." : "Publish posts, then advance the clock to accrue engagement."}
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <form action={simulateStep}>
+              <input type="hidden" name="campaignId" value={campaign.id} />
+              <input type="hidden" name="step" value="day" />
+              <button className="btn-twitter" disabled={!campaign.isActive}>
+                Simulate a day
+              </button>
+            </form>
+            <form action={simulateStep}>
+              <input type="hidden" name="campaignId" value={campaign.id} />
+              <input type="hidden" name="step" value="week" />
+              <button className="btn-twitter" disabled={!campaign.isActive}>
+                Simulate a week
+              </button>
+            </form>
+            {simCount > 0 ? (
+              <form action={resetSimulation}>
+                <input type="hidden" name="campaignId" value={campaign.id} />
+                <button className="btn-outline">Reset simulation</button>
+              </form>
+            ) : null}
           </div>
         </div>
 

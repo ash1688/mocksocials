@@ -15,6 +15,13 @@
       "when": 1780651109751,
       "tag": "0001_closed_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780653484630,
+      "tag": "0002_silent_black_widow",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -7,6 +7,7 @@ import {
   keywords,
   targets,
   posts,
+  simulations,
 } from "@/db/schema";
 import type { Platform } from "@/lib/stats";
 
@@ -87,6 +88,16 @@ export async function getCampaignSetup(
     keywords: kws,
     targets: tgts.map((t) => ({ ...t, platform: t.platform as Platform | null })),
   };
+}
+
+export async function getSimCount(campaignId: number): Promise<number> {
+  const row = (
+    await db
+      .select({ c: sql<number>`count(*)::int` })
+      .from(simulations)
+      .where(eq(simulations.campaignId, campaignId))
+  )[0];
+  return row?.c ?? 0;
 }
 
 export type CampaignPost = {
