@@ -21,8 +21,8 @@ CREATE TABLE "users" (
 	"location" varchar(100) DEFAULT '',
 	"education" varchar(150) DEFAULT '',
 	"is_admin" boolean DEFAULT false NOT NULL,
-	"last_active" timestamp,
-	"created_at" timestamp DEFAULT now() NOT NULL,
+	"last_active" timestamp with time zone,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "users_username_unique" UNIQUE("username")
 );
 --> statement-breakpoint
@@ -35,7 +35,7 @@ CREATE TABLE "fake_users" (
 	"cover_url" varchar(255),
 	"location" varchar(120),
 	"education" varchar(120),
-	"created_at" timestamp DEFAULT now() NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "fake_users_username_unique" UNIQUE("username")
 );
 --> statement-breakpoint
@@ -43,7 +43,7 @@ CREATE TABLE "group_members" (
 	"group_id" integer NOT NULL,
 	"user_id" integer NOT NULL,
 	"role" "group_role" DEFAULT 'member' NOT NULL,
-	"joined_at" timestamp DEFAULT now() NOT NULL,
+	"joined_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "group_members_group_id_user_id_pk" PRIMARY KEY("group_id","user_id")
 );
 --> statement-breakpoint
@@ -53,7 +53,7 @@ CREATE TABLE "groups_tbl" (
 	"description" text,
 	"cover_url" varchar(255) DEFAULT '',
 	"created_by" integer NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "manual_stats" (
@@ -62,7 +62,7 @@ CREATE TABLE "manual_stats" (
 	"platform" "platform" NOT NULL,
 	"stat_key" varchar(50) NOT NULL,
 	"stat_value" bigint DEFAULT 0 NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "uniq_stat" UNIQUE("user_id","platform","stat_key")
 );
 --> statement-breakpoint
@@ -71,7 +71,7 @@ CREATE TABLE "comment_likes" (
 	"comment_id" integer NOT NULL,
 	"user_id" integer,
 	"fake_user_id" integer,
-	"created_at" timestamp DEFAULT now() NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "uniq_comment_like" UNIQUE("comment_id","user_id")
 );
 --> statement-breakpoint
@@ -82,7 +82,7 @@ CREATE TABLE "comments" (
 	"user_id" integer,
 	"fake_user_id" integer,
 	"content" text NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "community_notes" (
@@ -100,7 +100,7 @@ CREATE TABLE "likes" (
 	"post_id" integer NOT NULL,
 	"user_id" integer,
 	"fake_user_id" integer,
-	"created_at" timestamp DEFAULT now() NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "uniq_like" UNIQUE("post_id","user_id")
 );
 --> statement-breakpoint
@@ -114,7 +114,7 @@ CREATE TABLE "posts" (
 	"parent_id" integer,
 	"group_id" integer,
 	"quote_text" text,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "stories" (
@@ -122,8 +122,8 @@ CREATE TABLE "stories" (
 	"user_id" integer,
 	"image_url" varchar(255) NOT NULL,
 	"caption" varchar(255) DEFAULT '',
-	"created_at" timestamp DEFAULT now() NOT NULL,
-	"expires_at" timestamp NOT NULL
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"expires_at" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "youtube_meta" (

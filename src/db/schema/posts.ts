@@ -38,7 +38,9 @@ export const posts = pgTable(
     parentId: integer("parent_id").references((): AnyPgColumn => posts.id),
     groupId: integer("group_id").references(() => groups.id),
     quoteText: text("quote_text"),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     index("idx_platform_created").on(t.platform, t.createdAt),
@@ -62,7 +64,9 @@ export const likes = pgTable(
     fakeUserId: integer("fake_user_id").references(() => fakeUsers.id, {
       onDelete: "cascade",
     }),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     unique("uniq_like").on(t.postId, t.userId),
@@ -88,7 +92,9 @@ export const comments = pgTable(
       onDelete: "cascade",
     }),
     content: text("content").notNull(),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     index("comments_post_idx").on(t.postId),
@@ -110,7 +116,9 @@ export const commentLikes = pgTable(
     fakeUserId: integer("fake_user_id").references(() => fakeUsers.id, {
       onDelete: "cascade",
     }),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [unique("uniq_comment_like").on(t.commentId, t.userId)],
 );
@@ -142,8 +150,10 @@ export const stories = pgTable(
     }),
     imageUrl: varchar("image_url", { length: 255 }).notNull(),
     caption: varchar("caption", { length: 255 }).default(""),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   },
   (t) => [
     index("idx_stories_active").on(t.expiresAt),

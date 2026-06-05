@@ -25,8 +25,10 @@ export const users = pgTable("users", {
   location: varchar("location", { length: 100 }).default(""),
   education: varchar("education", { length: 150 }).default(""),
   isAdmin: boolean("is_admin").notNull().default(false),
-  lastActive: timestamp("last_active"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  lastActive: timestamp("last_active", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 /**

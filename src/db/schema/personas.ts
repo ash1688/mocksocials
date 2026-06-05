@@ -19,5 +19,7 @@ export const fakeUsers = pgTable("fake_users", {
   coverUrl: varchar("cover_url", { length: 255 }),
   location: varchar("location", { length: 120 }),
   education: varchar("education", { length: 120 }),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });

@@ -23,7 +23,9 @@ export const groups = pgTable(
     createdBy: integer("created_by")
       .notNull()
       .references(() => users.id),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [index("groups_created_by_idx").on(t.createdBy)],
 );
@@ -38,7 +40,9 @@ export const groupMembers = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     role: groupRoleEnum("role").notNull().default("member"),
-    joinedAt: timestamp("joined_at").notNull().defaultNow(),
+    joinedAt: timestamp("joined_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     primaryKey({ columns: [t.groupId, t.userId] }),

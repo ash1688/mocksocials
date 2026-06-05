@@ -25,7 +25,9 @@ export const manualStats = pgTable(
     platform: platformEnum("platform").notNull(),
     statKey: varchar("stat_key", { length: 50 }).notNull(),
     statValue: bigint("stat_value", { mode: "number" }).notNull().default(0),
-    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [unique("uniq_stat").on(t.userId, t.platform, t.statKey)],
 );
