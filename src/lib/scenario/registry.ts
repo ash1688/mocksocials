@@ -11,6 +11,8 @@ import { SAKA_SCENARIO } from "./saka";
 import { TAA_RATA_SCENARIO } from "./taa-rata";
 import { BALE_SCENARIO } from "./bale";
 import { BEEHOTELS_SCENARIO } from "./beehotels";
+import { BK_IWD_SCENARIO } from "./bk-iwd";
+import { GREGGS_SCENARIO } from "./greggs";
 import type { Scenario, ScenarioTask } from "./red-bull";
 
 // All authored scenarios, keyed by id. Future ports register here so both the
@@ -30,6 +32,8 @@ export const SCENARIOS: Record<string, Scenario> = {
   [TAA_RATA_SCENARIO.id]: TAA_RATA_SCENARIO,
   [BALE_SCENARIO.id]: BALE_SCENARIO,
   [BEEHOTELS_SCENARIO.id]: BEEHOTELS_SCENARIO,
+  [BK_IWD_SCENARIO.id]: BK_IWD_SCENARIO,
+  [GREGGS_SCENARIO.id]: GREGGS_SCENARIO,
 };
 
 export function getScenario(id: string): Scenario | undefined {

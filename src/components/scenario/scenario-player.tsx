@@ -322,7 +322,12 @@ function BeatCard({ beat }: { beat: Beat }) {
             </span>
           ) : null}
         </div>
-        <div className="scn-photo-frame">📷 Photo</div>
+        {beat.src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="scn-photo-img" src={beat.src} alt={beat.caption} />
+        ) : (
+          <div className="scn-photo-frame">📷 Photo</div>
+        )}
         <div className="tweet-body" style={{ marginTop: 10 }}>
           {highlight(beat.caption)}
         </div>
@@ -384,6 +389,91 @@ function BeatCard({ beat }: { beat: Beat }) {
         {beat.scorers ? <div className="scn-match-scorers">{beat.scorers}</div> : null}
         {beat.venue ? <div className="scn-match-venue muted small">{beat.venue}</div> : null}
         {beat.note ? <div className="scn-match-note">{beat.note}</div> : null}
+      </div>
+    );
+  }
+  if (beat.type === "news") {
+    return (
+      <div className="card scn-news">
+        <div className="scn-news-outlet">
+          <span className="scn-news-dot" style={{ background: beat.outletColor }} />
+          {beat.outlet}
+        </div>
+        <div className="scn-news-headline">{beat.headline}</div>
+        <div className="scn-news-sub">{beat.sub}</div>
+        {beat.url ? <div className="scn-news-url">🔗 {beat.url}</div> : null}
+      </div>
+    );
+  }
+  if (beat.type === "disclaimer") {
+    return (
+      <div className="card scn-disclaimer">
+        <span className="scn-disclaimer-mark">ℹ</span>
+        {beat.text}
+      </div>
+    );
+  }
+  if (beat.type === "ticker") {
+    const last = beat.climb[beat.climb.length - 1] ?? 0;
+    const first = beat.climb[0] ?? 0;
+    const up = last >= first;
+    return (
+      <div className="card scn-ticker">
+        <div className="scn-ticker-label">{beat.label}</div>
+        <div className="scn-ticker-rows">
+          {beat.climb.map((p, i) => (
+            <div key={i} className="scn-ticker-row">
+              <span className="scn-ticker-time">{beat.timestamps[i] ?? ""}</span>
+              <span className="scn-ticker-price" style={{ color: up ? "#1c7a3e" : "var(--danger)" }}>
+                {p}
+              </span>
+            </div>
+          ))}
+        </div>
+        {beat.haltReason ? (
+          <div className="scn-ticker-halt">
+            ⛔ Trading halted{beat.haltPrice ? ` at ${beat.haltPrice}` : ""} — {beat.haltReason}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+  if (beat.type === "fckbucket") {
+    return (
+      <div className="card scn-fck">
+        <div className="scn-fck-letters">{beat.letters ?? "FCK"}</div>
+        <div className="scn-fck-caption">{beat.caption}</div>
+      </div>
+    );
+  }
+  if (beat.type === "orgchart") {
+    return (
+      <div className="card scn-org">
+        <div className="scn-org-company">{beat.company}</div>
+        <div className="scn-org-source">{beat.source}</div>
+        {beat.officers.map((o, i) => (
+          <div key={i} className="scn-org-row">
+            <span className="scn-org-role">{o.role}</span>
+            <span className="scn-org-name">{o.name}</span>
+          </div>
+        ))}
+        {beat.caption ? <div className="scn-org-caption">{beat.caption}</div> : null}
+      </div>
+    );
+  }
+  if (beat.type === "transcript") {
+    return (
+      <div className="card scn-transcript">
+        <div className="scn-transcript-title">{beat.title}</div>
+        {beat.subtitle ? (
+          <div className="scn-transcript-sub">{beat.subtitle}</div>
+        ) : null}
+        {beat.lines.map((l, i) => (
+          <div key={i} className="scn-transcript-line">
+            <div className="scn-transcript-q">{l.q}</div>
+            <div className="scn-transcript-a">{l.a}</div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -973,8 +1063,54 @@ const SCN_CSS = `
 .scn-multilens-text { font-size: 13px; color: var(--muted); line-height: 1.5; }
 .scn-multilens-footer { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; font-style: italic; text-align: center; color: var(--muted); line-height: 1.5; }
 
-/* Photo (captioned placeholder) */
+/* Photo (real image or captioned placeholder) */
 .scn-photo-frame { display: flex; align-items: center; justify-content: center; min-height: 150px; background: var(--bg); border: 1px dashed var(--border); border-radius: 8px; color: var(--muted); font-size: 13px; letter-spacing: 0.04em; }
+.scn-photo-img { width: 100%; display: block; border-radius: 8px; border: 1px solid var(--border); }
+
+/* News headline */
+.scn-news { border-left: 4px solid var(--muted); }
+.scn-news-outlet { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.scn-news-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.scn-news-headline { font-size: 16px; font-weight: 700; line-height: 1.35; margin-bottom: 5px; }
+.scn-news-sub { font-size: 13px; color: var(--text); line-height: 1.55; }
+.scn-news-url { margin-top: 8px; font-size: 11px; color: var(--muted); font-family: monospace; }
+
+/* Disclaimer */
+.scn-disclaimer { background: var(--bg); border: 1px dashed var(--border); font-size: 12.5px; line-height: 1.55; color: var(--muted); display: flex; gap: 8px; }
+.scn-disclaimer-mark { font-weight: 700; color: var(--primary); flex: none; }
+
+/* Stock ticker */
+.scn-ticker { border-left: 4px solid #1c7a3e; }
+.scn-ticker-label { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.scn-ticker-rows { display: flex; flex-direction: column; gap: 2px; }
+.scn-ticker-row { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; padding: 3px 0; border-bottom: 1px dashed var(--border); }
+.scn-ticker-row:last-child { border-bottom: none; }
+.scn-ticker-time { font-size: 12px; color: var(--muted); }
+.scn-ticker-price { font-size: 14px; font-weight: 700; }
+.scn-ticker-halt { margin-top: 8px; font-size: 12px; font-weight: 700; color: var(--danger); }
+
+/* KFC-style FCK apology */
+.scn-fck { text-align: center; }
+.scn-fck-letters { font-size: 44px; font-weight: 900; letter-spacing: 4px; color: var(--danger); }
+.scn-fck-caption { font-size: 12px; color: var(--muted); margin-top: 6px; font-style: italic; }
+
+/* Org / ownership chart */
+.scn-org { border-left: 4px solid #d98a1a; }
+.scn-org-company { font-size: 14px; font-weight: 700; }
+.scn-org-source { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+.scn-org-row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px dashed var(--border); }
+.scn-org-role { font-size: 12px; color: var(--muted); }
+.scn-org-name { font-size: 13px; font-weight: 600; text-align: right; }
+.scn-org-caption { margin-top: 8px; font-size: 12px; font-style: italic; color: var(--muted); line-height: 1.5; }
+
+/* Transcript */
+.scn-transcript { border-left: 4px solid var(--primary); }
+.scn-transcript-title { font-size: 14px; font-weight: 700; }
+.scn-transcript-sub { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.scn-transcript-line { padding: 6px 0; border-bottom: 1px dashed var(--border); }
+.scn-transcript-line:last-child { border-bottom: none; }
+.scn-transcript-q { font-size: 13px; color: var(--muted); }
+.scn-transcript-a { font-size: 14px; font-weight: 700; color: var(--text); }
 
 /* Episode breakdown */
 .scn-episode { border-left: 4px solid #6b46c1; }

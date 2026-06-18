@@ -157,8 +157,8 @@ export interface CountTimelineCard {
   footer?: string;
 }
 
-/** A posted photo. Source images aren't embedded — shown as a captioned
- *  placeholder (the caption carries the teaching content). */
+/** A posted photo. When `src` is set (a path under /public) the real image is
+ *  shown; otherwise it falls back to a captioned placeholder. */
 export interface PhotoCard {
   type: "photo";
   name: string;
@@ -168,6 +168,57 @@ export interface PhotoCard {
   verified?: boolean;
   caption: string;
   platform?: Platform;
+  src?: string; // e.g. "/assets/scenarios/verstappen-fia.png"
+}
+
+/** A news-outlet headline card. */
+export interface NewsCard {
+  type: "news";
+  outlet: string;
+  outletColor: string;
+  headline: string;
+  sub: string;
+  url?: string;
+}
+
+/** A teaching disclaimer (e.g. "fictional case study"). */
+export interface DisclaimerCard {
+  type: "disclaimer";
+  text: string;
+}
+
+/** A stock-ticker card showing a climb and (optionally) a trading halt. */
+export interface TickerCard {
+  type: "ticker";
+  label: string;
+  climb: number[];
+  timestamps: string[];
+  haltPrice?: number;
+  haltReason?: string;
+}
+
+/** The KFC-style rearranged-letters apology ("FCK"). */
+export interface FckBucketCard {
+  type: "fckbucket";
+  letters?: string; // defaults to "FCK"
+  caption: string;
+}
+
+/** An ownership / org chart (who really runs the thing). */
+export interface OrgChartCard {
+  type: "orgchart";
+  company: string;
+  source: string;
+  officers: { role: string; name: string }[];
+  caption?: string;
+}
+
+/** A Q&A transcript (e.g. a press conference). */
+export interface TranscriptCard {
+  type: "transcript";
+  title: string;
+  subtitle?: string;
+  lines: { q: string; a: string }[];
 }
 
 /** A TV episode breakdown — show, season, title, airdate, bullet points. */
@@ -220,7 +271,13 @@ export type Beat =
   | PhotoCard
   | EpisodeCard
   | TrackRecordCard
-  | MatchCard;
+  | MatchCard
+  | NewsCard
+  | DisclaimerCard
+  | TickerCard
+  | FckBucketCard
+  | OrgChartCard
+  | TranscriptCard;
 
 export interface ScenarioSection {
   label: string;
