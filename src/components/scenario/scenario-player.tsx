@@ -92,7 +92,8 @@ function PostCard({ p }: { p: ScenarioPost }) {
  *  video description, so the combined feed mixes real-looking platforms. */
 function YtCard({ p }: { p: ScenarioPost }) {
   const c = AV_COLORS[p.av];
-  const thumb = `https://picsum.photos/seed/${encodeURIComponent(p.videoTitle ?? p.handle)}/640/360`;
+  const thumb =
+    p.src ?? `https://picsum.photos/seed/${encodeURIComponent(p.videoTitle ?? p.handle)}/640/360`;
   return (
     <div className="scn-yt-wrap">
       <div className="yt-card scn-yt">

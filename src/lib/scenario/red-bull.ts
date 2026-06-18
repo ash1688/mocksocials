@@ -31,6 +31,8 @@ export interface ScenarioPost {
   // MockTube beats render as a video card; the text becomes the description.
   videoTitle?: string;
   duration?: string;
+  // Optional real thumbnail (path under /public); falls back to a placeholder.
+  src?: string;
   // MockGram / MockBook image beats.
   image?: string;
 }
