@@ -157,6 +157,50 @@ export interface CountTimelineCard {
   footer?: string;
 }
 
+/** A posted photo. Source images aren't embedded — shown as a captioned
+ *  placeholder (the caption carries the teaching content). */
+export interface PhotoCard {
+  type: "photo";
+  name: string;
+  handle: string;
+  initials: string;
+  av: AvKind;
+  verified?: boolean;
+  caption: string;
+  platform?: Platform;
+}
+
+/** A TV episode breakdown — show, season, title, airdate, bullet points. */
+export interface EpisodeCard {
+  type: "episode";
+  show: string;
+  season: string;
+  title: string;
+  airdate: string;
+  bullets: string[];
+  note?: string;
+}
+
+/** A track record over time: who challenged, what they did, what happened. */
+export interface TrackRecordCard {
+  type: "trackrecord";
+  title: string;
+  rows: { year: string; challenger: string; move: string; result: string }[];
+  footer?: string;
+}
+
+/** A football-style scoreline card. */
+export interface MatchCard {
+  type: "matchcard";
+  competition: string;
+  venue?: string;
+  home: { name: string; score: number; flag?: string };
+  away: { name: string; score: number; flag?: string };
+  status?: string;
+  scorers?: string;
+  note?: string;
+}
+
 export type Beat =
   | ScenarioPost
   | TrendCard
@@ -172,7 +216,11 @@ export type Beat =
   | BroadcastCard
   | PodcastCard
   | MultiLensCard
-  | CountTimelineCard;
+  | CountTimelineCard
+  | PhotoCard
+  | EpisodeCard
+  | TrackRecordCard
+  | MatchCard;
 
 export interface ScenarioSection {
   label: string;

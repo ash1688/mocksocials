@@ -4,6 +4,13 @@ import { RONALDO_SCENARIO } from "./ronaldo";
 import { ZOUMA_SCENARIO } from "./zouma";
 import { VETTEL_SCENARIO } from "./vettel";
 import { SACHSGATE_SCENARIO } from "./sachsgate";
+import { NASTY_NICK_SCENARIO } from "./nasty-nick";
+import { RAGHUNATHAN_SCENARIO } from "./raghunathan";
+import { SOUTHPARK_SCENARIO } from "./southpark";
+import { SAKA_SCENARIO } from "./saka";
+import { TAA_RATA_SCENARIO } from "./taa-rata";
+import { BALE_SCENARIO } from "./bale";
+import { BEEHOTELS_SCENARIO } from "./beehotels";
 import type { Scenario, ScenarioTask } from "./red-bull";
 
 // All authored scenarios, keyed by id. Future ports register here so both the
@@ -16,6 +23,13 @@ export const SCENARIOS: Record<string, Scenario> = {
   [ZOUMA_SCENARIO.id]: ZOUMA_SCENARIO,
   [VETTEL_SCENARIO.id]: VETTEL_SCENARIO,
   [SACHSGATE_SCENARIO.id]: SACHSGATE_SCENARIO,
+  [NASTY_NICK_SCENARIO.id]: NASTY_NICK_SCENARIO,
+  [RAGHUNATHAN_SCENARIO.id]: RAGHUNATHAN_SCENARIO,
+  [SOUTHPARK_SCENARIO.id]: SOUTHPARK_SCENARIO,
+  [SAKA_SCENARIO.id]: SAKA_SCENARIO,
+  [TAA_RATA_SCENARIO.id]: TAA_RATA_SCENARIO,
+  [BALE_SCENARIO.id]: BALE_SCENARIO,
+  [BEEHOTELS_SCENARIO.id]: BEEHOTELS_SCENARIO,
 };
 
 export function getScenario(id: string): Scenario | undefined {

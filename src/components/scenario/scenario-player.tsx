@@ -303,6 +303,90 @@ function BeatCard({ beat }: { beat: Beat }) {
       </div>
     );
   }
+  if (beat.type === "photo") {
+    const c = AV_COLORS[beat.av];
+    return (
+      <article className="tweet card scn-card">
+        <div className="tweet-head">
+          <div className="avatar scn-avatar" style={{ background: c.bg, color: c.color }}>
+            {beat.initials}
+          </div>
+          <div style={{ flex: 1 }}>
+            <strong>{beat.name}</strong>
+            {beat.verified ? <span className="scn-verified"> ✓</span> : null}{" "}
+            <span className="muted">{beat.handle}</span>
+          </div>
+          {beat.platform ? (
+            <span className={`scn-platform ${beat.platform === "MockTube" ? "scn-mocktube" : ""}`}>
+              {beat.platform}
+            </span>
+          ) : null}
+        </div>
+        <div className="scn-photo-frame">📷 Photo</div>
+        <div className="tweet-body" style={{ marginTop: 10 }}>
+          {highlight(beat.caption)}
+        </div>
+      </article>
+    );
+  }
+  if (beat.type === "episode") {
+    return (
+      <div className="card scn-episode">
+        <div className="scn-episode-top">
+          <span className="scn-episode-show">{beat.show}</span>
+          <span className="scn-episode-season">{beat.season}</span>
+        </div>
+        <div className="scn-episode-title">{beat.title}</div>
+        <div className="scn-episode-air">{beat.airdate}</div>
+        <ul className="scn-episode-bullets">
+          {beat.bullets.map((b, i) => (
+            <li key={i}>{b}</li>
+          ))}
+        </ul>
+        {beat.note ? <div className="scn-episode-note">{beat.note}</div> : null}
+      </div>
+    );
+  }
+  if (beat.type === "trackrecord") {
+    return (
+      <div className="card scn-track">
+        <div className="scn-track-title">{beat.title}</div>
+        {beat.rows.map((r, i) => (
+          <div key={i} className="scn-track-row">
+            <span className="scn-track-year">{r.year}</span>
+            <div>
+              <div className="scn-track-challenger">{r.challenger}</div>
+              <div className="scn-track-move">{r.move}</div>
+              <div className="scn-track-result">→ {r.result}</div>
+            </div>
+          </div>
+        ))}
+        {beat.footer ? <div className="scn-track-footer">{beat.footer}</div> : null}
+      </div>
+    );
+  }
+  if (beat.type === "matchcard") {
+    return (
+      <div className="card scn-match">
+        <div className="scn-match-comp">{beat.competition}</div>
+        <div className="scn-match-score">
+          <span className="scn-match-team">
+            {beat.home.flag} {beat.home.name}
+          </span>
+          <span className="scn-match-nums">
+            {beat.home.score} – {beat.away.score}
+          </span>
+          <span className="scn-match-team right">
+            {beat.away.name} {beat.away.flag}
+          </span>
+        </div>
+        {beat.status ? <div className="scn-match-status">{beat.status}</div> : null}
+        {beat.scorers ? <div className="scn-match-scorers">{beat.scorers}</div> : null}
+        {beat.venue ? <div className="scn-match-venue muted small">{beat.venue}</div> : null}
+        {beat.note ? <div className="scn-match-note">{beat.note}</div> : null}
+      </div>
+    );
+  }
   if (beat.type === "counttimeline") {
     return (
       <div className="card scn-ctl">
@@ -888,6 +972,43 @@ const SCN_CSS = `
 .scn-multilens-label { font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
 .scn-multilens-text { font-size: 13px; color: var(--muted); line-height: 1.5; }
 .scn-multilens-footer { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; font-style: italic; text-align: center; color: var(--muted); line-height: 1.5; }
+
+/* Photo (captioned placeholder) */
+.scn-photo-frame { display: flex; align-items: center; justify-content: center; min-height: 150px; background: var(--bg); border: 1px dashed var(--border); border-radius: 8px; color: var(--muted); font-size: 13px; letter-spacing: 0.04em; }
+
+/* Episode breakdown */
+.scn-episode { border-left: 4px solid #6b46c1; }
+.scn-episode-top { display: flex; gap: 8px; align-items: baseline; }
+.scn-episode-show { font-size: 13px; font-weight: 700; }
+.scn-episode-season { font-size: 11px; color: var(--muted); }
+.scn-episode-title { font-size: 16px; font-weight: 700; margin: 4px 0 2px; }
+.scn-episode-air { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.scn-episode-bullets { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+.scn-episode-bullets li { font-size: 13px; line-height: 1.45; color: var(--text); }
+.scn-episode-note { margin-top: 10px; font-size: 12px; font-style: italic; color: var(--muted); line-height: 1.5; }
+
+/* Track record over time */
+.scn-track { border-left: 4px solid var(--primary); }
+.scn-track-title { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+.scn-track-row { display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px dashed var(--border); }
+.scn-track-row:last-of-type { border-bottom: none; }
+.scn-track-year { flex: none; width: 54px; font-size: 14px; font-weight: 700; color: var(--primary); }
+.scn-track-challenger { font-size: 13px; font-weight: 600; color: var(--text); }
+.scn-track-move { font-size: 13px; color: var(--muted); line-height: 1.4; }
+.scn-track-result { font-size: 13px; color: #1c7a3e; line-height: 1.4; margin-top: 2px; }
+.scn-track-footer { margin-top: 10px; font-size: 12px; font-style: italic; color: var(--muted); line-height: 1.5; }
+
+/* Match scoreline */
+.scn-match { border-left: 4px solid #1c7a3e; text-align: center; }
+.scn-match-comp { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; }
+.scn-match-score { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 10px 0 6px; }
+.scn-match-team { flex: 1; font-size: 14px; font-weight: 600; text-align: right; }
+.scn-match-team.right { text-align: left; }
+.scn-match-nums { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.scn-match-status { font-size: 11px; font-weight: 700; color: var(--danger); letter-spacing: 0.04em; }
+.scn-match-scorers { font-size: 13px; color: var(--text); margin-top: 4px; }
+.scn-match-venue { margin-top: 4px; }
+.scn-match-note { margin-top: 8px; font-size: 12px; font-style: italic; color: var(--muted); line-height: 1.5; }
 
 /* Count timeline (escalation) */
 .scn-ctl { border-left: 4px solid #d98a1a; }
