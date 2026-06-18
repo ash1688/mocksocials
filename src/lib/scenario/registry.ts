@@ -23,6 +23,7 @@ import { KFC_SCENARIO } from "./kfc";
 import { NEC_BILLBOARD_SCENARIO } from "./nec-billboard";
 import { ELON_420_SCENARIO } from "./elon-420";
 import { LINEKER_SCENARIO } from "./lineker";
+import { VERSTAPPEN_FIA_SCENARIO } from "./verstappen-fia";
 import type { Scenario, ScenarioTask } from "./red-bull";
 
 // All authored scenarios, keyed by id. Future ports register here so both the
@@ -54,6 +55,7 @@ export const SCENARIOS: Record<string, Scenario> = {
   [NEC_BILLBOARD_SCENARIO.id]: NEC_BILLBOARD_SCENARIO,
   [ELON_420_SCENARIO.id]: ELON_420_SCENARIO,
   [LINEKER_SCENARIO.id]: LINEKER_SCENARIO,
+  [VERSTAPPEN_FIA_SCENARIO.id]: VERSTAPPEN_FIA_SCENARIO,
 };
 
 export function getScenario(id: string): Scenario | undefined {
