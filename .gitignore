@@ -39,3 +39,6 @@ Thumbs.db
 
 # typescript
 *.tsbuildinfo
+
+# local teaching-scenario authoring (work-in-progress, not yet ported)
+/scenarios/

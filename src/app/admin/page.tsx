@@ -7,6 +7,8 @@ import {
   GroupsTab,
   StatsTab,
   NotesTab,
+  ScenarioResponsesList,
+  ScenarioResponseDetail,
   ResetTab,
   SessionsTab,
   LogsTab,
@@ -17,6 +19,8 @@ import {
   listGroups,
   listManualStats,
   listNotes,
+  listScenarioSubmissions,
+  getScenarioSubmission,
   listSessions,
 } from "@/lib/admin/queries";
 import { readLog } from "@/lib/log";
@@ -25,7 +29,13 @@ import { readLog } from "@/lib/log";
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; filter?: string; limit?: string }>;
+  searchParams: Promise<{
+    tab?: string;
+    filter?: string;
+    limit?: string;
+    user?: string;
+    scenario?: string;
+  }>;
 }) {
   const me = await requireAdmin();
   const sp = await searchParams;
@@ -45,6 +55,18 @@ export default async function AdminPage({
     case "notes":
       body = <NotesTab rows={await listNotes()} />;
       break;
+    case "scenario": {
+      const uid = Number(sp.user);
+      const scn = sp.scenario;
+      if (uid && scn) {
+        body = (
+          <ScenarioResponseDetail rows={await getScenarioSubmission(uid, scn)} />
+        );
+      } else {
+        body = <ScenarioResponsesList rows={await listScenarioSubmissions()} />;
+      }
+      break;
+    }
     case "reset":
       body = <ResetTab />;
       break;

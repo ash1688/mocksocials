@@ -64,12 +64,50 @@ export interface ScenarioSection {
   posts: Beat[];
 }
 
+/** A multiple-choice task. Correct answer + explanation are revealed only after
+ *  the student submits the whole task set — never per-question. */
+export interface ScenarioMCQ {
+  type: "mcq";
+  id: string; // stable per-scenario slug; the DB key (e.g. "rb-q1")
+  prompt: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+/** An open written-response task — reflective, no auto-grade. */
+export interface ScenarioWritten {
+  type: "written";
+  id: string;
+  prompt: string;
+  placeholder?: string;
+}
+
+export type ScenarioTask = ScenarioMCQ | ScenarioWritten;
+
+/** Client-safe MCQ — the correct answer + explanation are stripped so they are
+ *  never sent to the browser before the student submits (revealed by the server
+ *  action). */
+export type ClientMCQ = Omit<ScenarioMCQ, "correctIndex" | "explanation">;
+export type ClientTask = ClientMCQ | ScenarioWritten;
+
+/** Project authored tasks to their client-safe form (drops MCQ answers). */
+export function toClientTasks(tasks: ScenarioTask[]): ClientTask[] {
+  return tasks.map((t) =>
+    t.type === "mcq"
+      ? { type: "mcq", id: t.id, prompt: t.prompt, options: t.options }
+      : t,
+  );
+}
+
 export interface Scenario {
   id: string;
   badge: string;
   title: string;
   prePosts: ScenarioPost[];
   sections: ScenarioSection[];
+  /** Authored end-of-scenario quiz, shown as a final step after the Verdict. */
+  tasks?: ScenarioTask[];
 }
 
 export const RED_BULL_SCENARIO: Scenario = {
@@ -160,6 +198,268 @@ export const RED_BULL_SCENARIO: Scenario = {
           { num: "0", label: "Of it that helped the team go faster" },
         ] },
       ],
+    },
+  ],
+  // Authored Q&A — comprehensive, multi-aspect (ADR-0006). MCQ (A–L) cover
+  // comprehension/analysis of the story; the stakeholder set (I–L) plus several
+  // written tasks ask students to APPLY the lessons to actors the documentary
+  // never showed (rival teams, FOM/F1, the FIA, sponsors). Ids are stable keys.
+  tasks: [
+    // --- A. Confirmed vs rumour ---------------------------------------------
+    {
+      type: "mcq",
+      id: "rb-q1",
+      prompt:
+        "When the story first broke, what had actually been confirmed by the journalists?",
+      options: [
+        "That a senior figure was guilty of the allegations",
+        "Only that an internal investigation was underway — nothing more",
+        "That the team principal would be sacked",
+        "That the leaked files were genuine",
+      ],
+      correctIndex: 1,
+      explanation:
+        "The reporters (Slater, Croft, Brundle) were careful to separate the one confirmed fact — that a process existed — from the flood of speculation. 'Confirmed' and 'suggested' are not the same thing.",
+    },
+    // --- B. The two processes ------------------------------------------------
+    {
+      type: "mcq",
+      id: "rb-q2",
+      prompt:
+        "The internal investigation cleared the individual. Why didn't that settle the story?",
+      options: [
+        "Because the allegations were re-filed the next day",
+        "Because questions were then raised about how the internal process itself was run, prompting calls for an external review",
+        "Because the FIA overturned the result",
+        "Because the individual admitted fault afterwards",
+      ],
+      correctIndex: 1,
+      explanation:
+        "Two distinct processes got conflated online: the internal investigation (which dismissed the complaint) and a separate external review of how that investigation was conducted. Confusing the two is exactly how misinformation spread.",
+    },
+    // --- C. The real damage --------------------------------------------------
+    {
+      type: "mcq",
+      id: "rb-q3",
+      prompt:
+        "According to the documentary's verdict, what caused the lasting damage to the team?",
+      options: [
+        "A points deduction from the investigation",
+        "The viral leak being proven true",
+        "The exodus of senior talent and the loss of trust — not any verdict",
+        "A sponsor pulling its funding",
+      ],
+      correctIndex: 2,
+      explanation:
+        "The investigation was only the spark. The real cost was people walking out the door (Newey, Wheatley, Marshall, Courtenay…). A team is its people and the trust between them — lose that and money can't buy it back.",
+    },
+    // --- D. The leak / "it's on the internet" --------------------------------
+    {
+      type: "mcq",
+      id: "rb-q4",
+      prompt:
+        "Overnight, leaked material began circulating. What did journalists like David Croft and Martin Brundle argue about it?",
+      options: [
+        "The leak finally proved who was guilty",
+        "Everyone had a duty to share it as widely as possible",
+        "'It's on the internet' is not the same as 'it's true' — and a leak only stops a fair process doing its job quietly",
+        "It was obviously fabricated and could be safely ignored",
+      ],
+      correctIndex: 2,
+      explanation:
+        "Croft asked people to think before sharing unverified files of unknown origin; Brundle noted a leak doesn't establish the truth of anything — it just removes a fair process's ability to work quietly. Source, context and authenticity were all unknown.",
+    },
+    // --- E. A creator's responsibility --------------------------------------
+    {
+      type: "mcq",
+      id: "rb-q5",
+      prompt:
+        "How did the viral creator RockerPoweredMohawk handle the unverified leak on his channel?",
+      options: [
+        "He posted the leaked files to chase views",
+        "He refused to platform the unverified files and kept separating confirmed facts from rumour",
+        "He ignored the story completely",
+        "He insisted all the leaked material was genuine",
+      ],
+      correctIndex: 1,
+      explanation:
+        "Despite building months of viral content on the story, he drew a clear line: the power struggle was real, but he would not platform unverified files, and he repeatedly told viewers most of the 'evidence' was unconfirmed. Even a viral creator can model responsibility.",
+    },
+    // --- F. When the family went public -------------------------------------
+    {
+      type: "mcq",
+      id: "rb-q6",
+      prompt:
+        "When a driver's family began briefing the press publicly, what did Bernie Collins say it signalled?",
+      options: [
+        "That the matter had been resolved",
+        "That internal channels had broken down — a private matter had become public and would be very hard to contain",
+        "That the team was about to win the championship",
+        "That nothing of importance was happening",
+      ],
+      correctIndex: 1,
+      explanation:
+        "Bernie noted that when a driver's family starts briefing the press, the internal channels have failed. Once a private matter becomes public it's very hard to put back in the box — and the paddock starts choosing sides.",
+    },
+    // --- G. The human cost of the memes -------------------------------------
+    {
+      type: "mcq",
+      id: "rb-q7",
+      prompt:
+        "The fan community gave everyone involved nicknames. What point did Bernie Collins make about this?",
+      options: [
+        "The nicknames were harmless fun with no downside",
+        "The memes actually helped the truth come out",
+        "Behind every nickname is a real professional with a family, being treated as if their workplace were a reality-TV show",
+        "Joking about the people involved should be a criminal offence",
+      ],
+      correctIndex: 2,
+      explanation:
+        "Bernie admitted the nicknames were funny but asked people to remember the real people behind them — professionals with families trying to do their jobs while the internet treated their workplace like entertainment.",
+    },
+    // --- H. The core lesson --------------------------------------------------
+    {
+      type: "mcq",
+      id: "rb-q8",
+      prompt:
+        "What is the documentary's central lesson about information during a crisis?",
+      options: [
+        "Trending topics are a reliable guide to the truth",
+        "Leaks are the fastest way to uncover what really happened",
+        "The loudest narrative is rarely the truest — separate what's confirmed from what's merely circulating",
+        "Memes are the best way to follow a breaking story",
+      ],
+      correctIndex: 2,
+      explanation:
+        "The verdict: in a crisis the loudest narrative is rarely the truest. Most of what went viral was never confirmed, while the real story — a great team losing its people and its trust — was in plain sight the whole time.",
+    },
+    // --- I. Rival teams (apply the lesson) ----------------------------------
+    {
+      type: "mcq",
+      id: "rb-q9",
+      prompt:
+        "A rival team principal is asked about the Red Bull situation in a press conference. What is the most professional response?",
+      options: [
+        "Publicly mock the rival to gain a competitive edge",
+        "Speculate about who is probably guilty",
+        "Decline to comment on another team's internal matter and keep the focus on the racing",
+        "Announce on camera that they're already trying to sign the departing staff",
+      ],
+      correctIndex: 2,
+      explanation:
+        "Commenting on a rival's unresolved internal matter invites blowback, prejudges a live process and can drag your own team into the story. The professional move is to decline and keep the focus on performance — any recruitment is handled quietly, not as a press-conference soundbite.",
+    },
+    // --- J. FOM / F1 ---------------------------------------------------------
+    {
+      type: "mcq",
+      id: "rb-q10",
+      prompt:
+        "As the sport's commercial and brand custodian, how should F1/FOM publicly handle an ongoing investigation at one of its teams?",
+      options: [
+        "Publicly take the family's side",
+        "Issue a measured statement that it respects due process and won't prejudge, while protecting the integrity of the sport",
+        "Declare the individual guilty to reassure sponsors",
+        "Leak its own information to control the story",
+      ],
+      correctIndex: 1,
+      explanation:
+        "FOM/F1 has to protect the sport's image without prejudicing a live process. A measured 'we respect due process and won't prejudge' line does that; taking sides, declaring guilt, or briefing against people would make F1 part of the problem.",
+    },
+    // --- K. FIA / Ben Sulayem -----------------------------------------------
+    {
+      type: "mcq",
+      id: "rb-q11",
+      prompt:
+        "The matter is an internal team/employment process, yet the FIA president comments publicly. Which is the most defensible FIA position?",
+      options: [
+        "Declare guilt and threaten sanctions based on unconfirmed claims",
+        "Stay completely silent even as the sport's reputation is damaged",
+        "Acknowledge it is aware and respects due process without prejudging — while noting that any proven conduct bringing the sport into disrepute would be taken seriously",
+        "Personally pick a side in the dispute",
+      ],
+      correctIndex: 2,
+      explanation:
+        "The FIA is dragged in by association and can point to the 'disrepute' provisions — but only proven conduct justifies action. The defensible line is to acknowledge, respect due process and reserve judgement; declaring guilt or taking sides on unconfirmed claims is overreach that itself harms the sport.",
+    },
+    // --- L. Sponsors ---------------------------------------------------------
+    {
+      type: "mcq",
+      id: "rb-q12",
+      prompt:
+        "A major team sponsor fears reputational damage from the story. What is the most measured first step?",
+      options: [
+        "Immediately and publicly terminate the deal over unconfirmed claims",
+        "Publicly defend the accused individual",
+        "Amplify the leaked files to show transparency",
+        "Privately seek assurances and wait for the verified findings before any public action",
+      ],
+      correctIndex: 3,
+      explanation:
+        "Knee-jerk public action on unconfirmed claims creates legal and reputational risk in every direction. The measured first step is private: seek assurances, understand the facts, and wait for verified findings before deciding whether any public response is warranted.",
+    },
+    // --- Written responses ---------------------------------------------------
+    {
+      type: "written",
+      id: "rb-w1",
+      prompt:
+        "Several journalists urged people not to share the leaked files. In your own words, explain why 'it's on the internet' is not the same as 'it's true', using an example from this story.",
+      placeholder:
+        "Think about the source, the context, and whether anything had been verified…",
+    },
+    {
+      type: "written",
+      id: "rb-w2",
+      prompt:
+        "If you were running the social-media response for a team facing a crisis like this, what is ONE thing you would do differently from how the online crowd behaved? Why?",
+      placeholder: "Consider tone, timing, facts vs rumour, and the people involved…",
+    },
+    {
+      type: "written",
+      id: "rb-w3",
+      prompt:
+        "Compare how the verified journalists behaved with how the online crowd behaved. What made the journalists' approach more trustworthy?",
+      placeholder:
+        "Think about sourcing, caution, separating fact from rumour, and respect for the people involved…",
+    },
+    {
+      type: "written",
+      id: "rb-w4",
+      prompt:
+        "In your own words, explain the difference between the internal investigation and the external review — and why conflating the two helped misinformation spread.",
+      placeholder:
+        "What was each process for? What did 'cleared' actually mean, and what was still unresolved?…",
+    },
+    {
+      type: "written",
+      id: "rb-w5",
+      prompt:
+        "What should rival teams say — or deliberately NOT say — and do during a crisis like this? Consider both reputation and competitive advantage.",
+      placeholder:
+        "Think about press-conference answers, public vs private comments, and how poaching staff is handled…",
+    },
+    {
+      type: "written",
+      id: "rb-w6",
+      prompt:
+        "You handle communications for F1/FOM. What would you say publicly, what would you do behind the scenes, and what would you avoid — and why?",
+      placeholder:
+        "Balance protecting the sport's image against respecting a live process…",
+    },
+    {
+      type: "written",
+      id: "rb-w7",
+      prompt:
+        "The FIA could argue the scandal brings the sport into disrepute, giving it grounds to get involved — but this is an internal employment process. Should the FIA, or its president personally, comment publicly? Weigh the disrepute/reputation argument against the risks of prejudging a live process and overstepping jurisdiction.",
+      placeholder:
+        "When does 'protecting the sport' tip over into overreach? What are the risks either way?…",
+    },
+    {
+      type: "written",
+      id: "rb-w8",
+      prompt:
+        "How might a team's sponsors react to a story like this? Describe a responsible approach versus a knee-jerk one, and the risks of each.",
+      placeholder:
+        "Think about morality clauses, public vs private pressure, and acting before the facts are known…",
     },
   ],
 };

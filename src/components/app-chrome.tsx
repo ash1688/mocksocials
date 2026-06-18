@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { logout } from "@/lib/auth/actions";
 import type { CurrentUser } from "@/lib/auth/session";
+import { countUnreadFeedback } from "@/lib/scenario/queries";
 import { ThemeToggle } from "./theme-toggle";
 
 type Platform = "twitter" | "facebook" | "instagram" | "youtube";
@@ -17,13 +18,14 @@ const TABS: { platform: Platform; label: string }[] = [
  * Faithful port of the PHP render_header() top bar: brand logo, platform nav,
  * theme toggle, current user + admin/logout. `active` highlights the tab.
  */
-export function AppChrome({
+export async function AppChrome({
   user,
   active,
 }: {
   user: CurrentUser;
   active?: Platform;
 }) {
+  const unreadFeedback = await countUnreadFeedback(user.id);
   return (
     <header className="topbar">
       <Link className="brand" href="/">
@@ -61,7 +63,27 @@ export function AppChrome({
         />
         <span>{user.displayName}</span>
         <Link href="/campaigns">Campaigns</Link>
-        <Link href="/scenario">Scenario</Link>
+        <Link href="/scenario" style={{ position: "relative" }}>
+          Scenario
+          {unreadFeedback > 0 ? (
+            <span
+              title={`${unreadFeedback} new piece(s) of teacher feedback`}
+              style={{
+                marginLeft: 6,
+                background: "var(--danger)",
+                color: "#fff",
+                fontSize: 11,
+                fontWeight: 700,
+                lineHeight: 1,
+                padding: "2px 6px",
+                borderRadius: 999,
+                verticalAlign: "middle",
+              }}
+            >
+              {unreadFeedback}
+            </span>
+          ) : null}
+        </Link>
         {user.isAdmin ? <Link href="/admin">Admin</Link> : null}
         <form action={logout} style={{ display: "inline" }}>
           <button

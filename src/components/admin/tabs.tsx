@@ -4,6 +4,7 @@ import { prettyNumber, relativeTime } from "@/lib/format";
 import { ConfirmButton } from "./confirm-button";
 import * as A from "@/lib/admin/actions";
 import type { LogLine } from "@/lib/log";
+import { getScenario, getTask } from "@/lib/scenario/registry";
 
 type UserRow = {
   id: number;
@@ -479,6 +480,210 @@ export function SessionsTab({ rows }: { rows: SessionRow[] }) {
           ))}
         </tbody>
       </table>
+    </>
+  );
+}
+
+type ScenarioResponseRow = {
+  userId: number;
+  displayName: string;
+  username: string;
+  scenarioId: string;
+  taskId: string;
+  selectedIndex: number | null;
+  isCorrect: boolean | null;
+  responseText: string | null;
+  teacherFeedback: string | null;
+  submittedAt: Date;
+};
+
+type ScenarioSubmissionRow = {
+  userId: number;
+  displayName: string;
+  username: string;
+  scenarioId: string;
+  answers: number;
+  mcqCorrect: number;
+  mcqTotal: number;
+  unreadFeedback: number;
+  lastSubmitted: Date;
+};
+
+const submissionHref = (userId: number, scenarioId: string) =>
+  `/admin?tab=scenario&user=${userId}&scenario=${encodeURIComponent(scenarioId)}`;
+
+/** List view: one row per submission (student × scenario). Click through to the
+ *  answers + feedback. Keeps the tab from being a wall of text. */
+export function ScenarioResponsesList({ rows }: { rows: ScenarioSubmissionRow[] }) {
+  return (
+    <>
+      <h2>Scenario Q&amp;A responses</h2>
+      <p className="muted small">
+        One row per submission — click a row to view the answers and leave
+        feedback.
+      </p>
+      {rows.length === 0 ? (
+        <p className="muted">No responses submitted yet.</p>
+      ) : (
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Scenario</th>
+              <th>MCQ</th>
+              <th>Submitted</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const href = submissionHref(r.userId, r.scenarioId);
+              const title = getScenario(r.scenarioId)?.title ?? r.scenarioId;
+              return (
+                <tr key={`${r.userId}:${r.scenarioId}`}>
+                  <td>
+                    <Link href={href}>{r.displayName}</Link>{" "}
+                    <span className="muted small">@{r.username}</span>
+                  </td>
+                  <td>
+                    <Link href={href}>{title}</Link>
+                  </td>
+                  <td>
+                    {r.mcqCorrect}/{r.mcqTotal}
+                  </td>
+                  <td className="small">
+                    {fmtDate(new Date(r.lastSubmitted))}
+                  </td>
+                  <td className="small">
+                    {r.unreadFeedback > 0 ? (
+                      <span className="muted" style={{ marginRight: 8 }}>
+                        {r.unreadFeedback} unseen
+                      </span>
+                    ) : null}
+                    <Link href={href}>View answers →</Link>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </>
+  );
+}
+
+/** Detail view: the full answers for one submission, with per-written-answer
+ *  feedback boxes. Authored prompts/options resolved from the registry. */
+export function ScenarioResponseDetail({ rows }: { rows: ScenarioResponseRow[] }) {
+  const back = (
+    <Link href="/admin?tab=scenario">← All submissions</Link>
+  );
+  const first = rows[0];
+  if (!first) {
+    return (
+      <>
+        <p style={{ marginBottom: 10 }}>{back}</p>
+        <p className="muted">This submission no longer exists.</p>
+      </>
+    );
+  }
+
+  const { displayName, username, scenarioId } = first;
+  const scenario = getScenario(scenarioId);
+  const mcqRows = rows.filter((r) => r.selectedIndex !== null);
+  const correct = mcqRows.filter((r) => r.isCorrect).length;
+  const ordered = scenario?.tasks
+    ? (scenario.tasks
+        .map((t) => rows.find((r) => r.taskId === t.id))
+        .filter(Boolean) as ScenarioResponseRow[])
+    : rows;
+  const latest = rows.reduce((a, b) =>
+    a.submittedAt > b.submittedAt ? a : b,
+  ).submittedAt;
+
+  return (
+    <>
+      <p style={{ marginBottom: 10 }}>{back}</p>
+      <h2>
+        {displayName} <span className="muted small">@{username}</span>
+      </h2>
+      <div className="card">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <strong>{scenario?.title ?? scenarioId}</strong>
+          <span className="muted small">
+            MCQ {correct}/{mcqRows.length} · last submitted {fmtDate(latest)}
+          </span>
+        </div>
+
+        <ol
+          style={{
+            margin: "10px 0 0",
+            paddingLeft: 20,
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
+          {ordered.map((r) => {
+            const task = getTask(scenarioId, r.taskId);
+            if (task?.type === "mcq") {
+              const chosen =
+                r.selectedIndex != null ? task.options[r.selectedIndex] : "—";
+              return (
+                <li key={r.taskId}>
+                  <div style={{ fontWeight: 600 }}>{task.prompt}</div>
+                  <div
+                    style={{ color: r.isCorrect ? "#1c7a3e" : "var(--danger)" }}
+                  >
+                    {r.isCorrect ? "✓" : "✗"} {chosen}
+                  </div>
+                  {!r.isCorrect ? (
+                    <div className="muted small">
+                      Correct: {task.options[task.correctIndex]}
+                    </div>
+                  ) : null}
+                </li>
+              );
+            }
+            return (
+              <li key={r.taskId}>
+                <div style={{ fontWeight: 600 }}>
+                  {task?.prompt ?? r.taskId}
+                </div>
+                <div style={{ whiteSpace: "pre-wrap" }}>
+                  {r.responseText || <span className="muted">(blank)</span>}
+                </div>
+                <form action={A.saveScenarioFeedback} style={{ marginTop: 6 }}>
+                  <input type="hidden" name="user_id" value={r.userId} />
+                  <input type="hidden" name="scenario_id" value={r.scenarioId} />
+                  <input type="hidden" name="task_id" value={r.taskId} />
+                  <label className="muted small">
+                    Feedback to student
+                    <textarea
+                      name="feedback"
+                      rows={2}
+                      defaultValue={r.teacherFeedback ?? ""}
+                      placeholder="Advice to send back to the student…"
+                    />
+                  </label>
+                  <div className="popover-actions">
+                    <button>
+                      {r.teacherFeedback ? "Update feedback" : "Save feedback"}
+                    </button>
+                  </div>
+                </form>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
     </>
   );
 }

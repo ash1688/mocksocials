@@ -13,6 +13,7 @@ import {
   groups,
   groupMembers,
   fakeUsers,
+  scenarioResponses,
 } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/guards";
 import { hashPassword } from "@/lib/auth/password";
@@ -27,6 +28,40 @@ async function actor() {
 }
 const back = (tab: string) => redirect(`/admin?tab=${tab}`);
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
+
+// --- Scenario Q&A ------------------------------------------------------------
+/** Save (or clear) a teacher's feedback on one student's answer. Shown back to
+ *  the student when they revisit the scenario's Tasks. */
+export async function saveScenarioFeedback(fd: FormData): Promise<void> {
+  const me = await actor();
+  const userId = Number(fd.get("user_id"));
+  const scenarioId = str(fd, "scenario_id");
+  const taskId = str(fd, "task_id");
+  const feedback = str(fd, "feedback");
+  if (Number.isInteger(userId) && scenarioId && taskId) {
+    await db
+      .update(scenarioResponses)
+      // New/updated feedback is unseen; clearing it resets the flag.
+      .set({ teacherFeedback: feedback || null, feedbackSeen: !feedback })
+      .where(
+        and(
+          eq(scenarioResponses.userId, userId),
+          eq(scenarioResponses.scenarioId, scenarioId),
+          eq(scenarioResponses.taskId, taskId),
+        ),
+      );
+    await logEvent(
+      "admin.scenario_feedback",
+      `user=${userId} scenario=${scenarioId} task=${taskId}`,
+      { actor: me.username },
+    );
+    // Stay on the submission's detail view after saving.
+    redirect(
+      `/admin?tab=scenario&user=${userId}&scenario=${encodeURIComponent(scenarioId)}`,
+    );
+  }
+  back("scenario");
+}
 
 // --- Users -------------------------------------------------------------------
 export async function createUser(fd: FormData): Promise<void> {

@@ -6,6 +6,7 @@ const TABS: [string, string][] = [
   ["groups", "Groups"],
   ["stats", "Stats"],
   ["notes", "Community Notes"],
+  ["scenario", "Scenario Q&A"],
   ["reset", "Reset tools"],
   ["sessions", "Sessions"],
   ["logs", "Logs"],

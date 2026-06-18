@@ -1,0 +1,1 @@
+ALTER TABLE "scenario_responses" ADD COLUMN "teacher_feedback" text;

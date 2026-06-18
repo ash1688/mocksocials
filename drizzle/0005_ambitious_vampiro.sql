@@ -1,0 +1,1 @@
+ALTER TABLE "scenario_responses" ADD COLUMN "feedback_seen" boolean DEFAULT false NOT NULL;

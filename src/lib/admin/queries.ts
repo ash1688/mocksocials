@@ -1,4 +1,4 @@
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import { db } from "@/db";
@@ -10,6 +10,7 @@ import {
   communityNotes,
   posts,
   fakeUsers,
+  scenarioResponses,
 } from "@/db/schema";
 
 export async function listUsers() {
@@ -71,6 +72,62 @@ export async function listNotes() {
     .leftJoin(pu, eq(pu.id, posts.userId))
     .leftJoin(pfu, eq(pfu.id, posts.fakeUserId))
     .orderBy(desc(communityNotes.createdAt));
+}
+
+/** One row per submission (student × scenario) for the list view: who, which
+ *  scenario, how many answers, MCQ score, unseen-feedback count, and when. */
+export async function listScenarioSubmissions() {
+  return db
+    .select({
+      userId: scenarioResponses.userId,
+      displayName: users.displayName,
+      username: users.username,
+      scenarioId: scenarioResponses.scenarioId,
+      answers: sql<number>`count(*)::int`,
+      mcqCorrect: sql<number>`count(*) FILTER (WHERE ${scenarioResponses.isCorrect})::int`,
+      mcqTotal: sql<number>`count(*) FILTER (WHERE ${scenarioResponses.selectedIndex} IS NOT NULL)::int`,
+      unreadFeedback: sql<number>`count(*) FILTER (WHERE ${scenarioResponses.teacherFeedback} IS NOT NULL AND ${scenarioResponses.feedbackSeen} = false)::int`,
+      lastSubmitted: sql<Date>`max(${scenarioResponses.submittedAt})`,
+    })
+    .from(scenarioResponses)
+    .innerJoin(users, eq(users.id, scenarioResponses.userId))
+    .groupBy(
+      scenarioResponses.userId,
+      users.displayName,
+      users.username,
+      scenarioResponses.scenarioId,
+    )
+    .orderBy(desc(sql`max(${scenarioResponses.submittedAt})`));
+}
+
+/** Full answers for one submission (student × scenario) — the detail view.
+ *  Authored prompts/options are resolved from the registry in the view. */
+export async function getScenarioSubmission(
+  userId: number,
+  scenarioId: string,
+) {
+  return db
+    .select({
+      userId: scenarioResponses.userId,
+      displayName: users.displayName,
+      username: users.username,
+      scenarioId: scenarioResponses.scenarioId,
+      taskId: scenarioResponses.taskId,
+      selectedIndex: scenarioResponses.selectedIndex,
+      isCorrect: scenarioResponses.isCorrect,
+      responseText: scenarioResponses.responseText,
+      teacherFeedback: scenarioResponses.teacherFeedback,
+      submittedAt: scenarioResponses.submittedAt,
+    })
+    .from(scenarioResponses)
+    .innerJoin(users, eq(users.id, scenarioResponses.userId))
+    .where(
+      and(
+        eq(scenarioResponses.userId, userId),
+        eq(scenarioResponses.scenarioId, scenarioId),
+      ),
+    )
+    .orderBy(asc(scenarioResponses.taskId));
 }
 
 export async function listSessions() {

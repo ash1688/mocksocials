@@ -1,13 +1,23 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import type {
   Scenario,
   Beat,
   ScenarioPost,
   AvKind,
+  ClientTask,
 } from "@/lib/scenario/red-bull";
+import {
+  saveScenarioResponses,
+  markScenarioFeedbackSeen,
+  resetMyScenario,
+  type GradedTask,
+  type SaveResult,
+} from "@/lib/scenario/actions";
+import type { PriorResponse } from "@/lib/scenario/queries";
 
 const AV_COLORS: Record<AvKind, { bg: string; color: string }> = {
   journo: { bg: "#e4f0fb", color: "#1574c2" },
@@ -156,9 +166,250 @@ function BeatCard({ beat }: { beat: Beat }) {
   return <PostCard p={beat} />;
 }
 
-export function ScenarioPlayer({ scenario }: { scenario: Scenario }) {
+/** End-of-scenario Q&A. Answers (MCQ choices + written responses) are collected
+ *  locally, then saved + graded server-side on submit — only then are the
+ *  correct answers and explanations revealed. Resubmitting upserts. */
+function TaskPanel({
+  scenarioId,
+  tasks,
+  prior,
+}: {
+  scenarioId: string;
+  tasks: ClientTask[];
+  prior: PriorResponse[];
+}) {
+  const priorById = new Map(prior.map((p) => [p.taskId, p]));
+  const hasPrior = prior.length > 0;
+  const [choices, setChoices] = useState<Record<string, number>>(() => {
+    const init: Record<string, number> = {};
+    for (const p of prior) if (p.selectedIndex != null) init[p.taskId] = p.selectedIndex;
+    return init;
+  });
+  const [texts, setTexts] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    for (const p of prior) if (p.responseText != null) init[p.taskId] = p.responseText;
+    return init;
+  });
+  const [result, setResult] = useState<SaveResult | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  // Reaching the Tasks panel counts as viewing any waiting feedback — clear the
+  // nav badge (best-effort; the badge updates on the next navigation).
+  const hasFeedback = prior.some((p) => p.teacherFeedback);
+  useEffect(() => {
+    if (hasFeedback) void markScenarioFeedbackSeen(scenarioId);
+  }, [hasFeedback, scenarioId]);
+
+  const allAnswered = tasks.every((t) =>
+    t.type === "mcq"
+      ? choices[t.id] !== undefined
+      : (texts[t.id] ?? "").trim().length > 0,
+  );
+
+  const gradedById = new Map<string, GradedTask>(
+    (result?.graded ?? []).map((g) => [g.taskId, g]),
+  );
+  const submitted = result?.ok === true;
+
+  async function handleSubmit() {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const answers = tasks.map((t) => ({
+        taskId: t.id,
+        value: t.type === "mcq" ? (choices[t.id] ?? -1) : (texts[t.id] ?? ""),
+      }));
+      const res = await saveScenarioResponses(scenarioId, answers);
+      if (!res.ok) setError(res.error ?? "Could not save your answers.");
+      setResult(res);
+    } catch {
+      setError("Something went wrong saving your answers. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleReset() {
+    if (
+      !window.confirm(
+        "Reset your attempt? This clears your saved answers (and any teacher feedback) for this scenario so you can start again.",
+      )
+    )
+      return;
+    setResetting(true);
+    setError(null);
+    try {
+      await resetMyScenario(scenarioId);
+      setChoices({});
+      setTexts({});
+      setResult(null);
+      router.refresh(); // drop the now-stale prior answers from the server
+    } catch {
+      setError("Could not reset your attempt. Please try again.");
+    } finally {
+      setResetting(false);
+    }
+  }
+
+  const canReset = hasPrior || submitted;
+
+  return (
+    <div className="card scn-tasks">
+      <p className="muted small scn-tasks-intro">
+        Answer every question, then press <strong>Submit answers</strong>. Your
+        responses are saved and the correct answers are revealed at the end. Some
+        questions ask you to apply what you learned to people the scenario didn&apos;t
+        directly show.
+        {hasPrior ? (
+          <>
+            {" "}
+            Your previous answers are filled in below — look out for{" "}
+            <strong>teacher feedback</strong> on your written responses.
+          </>
+        ) : null}
+      </p>
+
+      {tasks.map((task, i) => {
+        const graded = gradedById.get(task.id);
+        return (
+          <div key={task.id} className="scn-task">
+            <div className="scn-task-prompt">
+              <span className="scn-task-num">{i + 1}</span>
+              {task.prompt}
+            </div>
+
+            {task.type === "mcq" ? (
+              <div className="scn-opts">
+                {task.options.map((opt, oi) => {
+                  const chosen = choices[task.id] === oi;
+                  const isCorrect = submitted && graded?.correctIndex === oi;
+                  const isWrongChoice = submitted && chosen && !isCorrect;
+                  return (
+                    <button
+                      key={oi}
+                      type="button"
+                      className={[
+                        "scn-opt",
+                        chosen ? "chosen" : "",
+                        isCorrect ? "correct" : "",
+                        isWrongChoice ? "wrong" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      disabled={submitting || submitted}
+                      onClick={() =>
+                        setChoices((c) => ({ ...c, [task.id]: oi }))
+                      }
+                    >
+                      <span className="scn-opt-mark">
+                        {isCorrect ? "✓" : isWrongChoice ? "✗" : ""}
+                      </span>
+                      {opt}
+                    </button>
+                  );
+                })}
+                {submitted && graded?.explanation ? (
+                  <div className="scn-explain">
+                    <strong>
+                      {graded.correct ? "Correct. " : "Answer. "}
+                    </strong>
+                    {graded.explanation}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div>
+                <textarea
+                  className="scn-textarea"
+                  rows={4}
+                  placeholder={task.placeholder ?? "Type your answer…"}
+                  value={texts[task.id] ?? ""}
+                  disabled={submitting}
+                  onChange={(e) =>
+                    setTexts((t) => ({ ...t, [task.id]: e.target.value }))
+                  }
+                />
+                {submitted ? (
+                  <div className="scn-explain">
+                    <strong>Saved. </strong>
+                    Written responses are recorded for your teacher to review —
+                    there is no single right answer.
+                  </div>
+                ) : null}
+                {priorById.get(task.id)?.teacherFeedback ? (
+                  <div className="scn-feedback">
+                    <strong>Teacher feedback: </strong>
+                    {priorById.get(task.id)!.teacherFeedback}
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {error ? <div className="scn-task-error">{error}</div> : null}
+
+      {submitted && result?.score && result.score.total > 0 ? (
+        <div className="scn-score">
+          You answered <strong>{result.score.correct}</strong> of{" "}
+          <strong>{result.score.total}</strong> multiple-choice questions
+          correctly.
+        </div>
+      ) : null}
+
+      <div className="scn-task-buttons">
+        <button
+          type="button"
+          className="btn-twitter scn-submit"
+          disabled={submitting || resetting || !allAnswered}
+          onClick={handleSubmit}
+        >
+          {submitting
+            ? "Saving…"
+            : submitted
+              ? "Resubmit answers"
+              : "Submit answers"}
+        </button>
+        {canReset ? (
+          <button
+            type="button"
+            className="btn-outline scn-reset"
+            disabled={submitting || resetting}
+            onClick={handleReset}
+          >
+            {resetting ? "Resetting…" : "Reset attempt"}
+          </button>
+        ) : null}
+      </div>
+      {!allAnswered && !submitted ? (
+        <span className="muted small scn-submit-hint">
+          Answer all questions to submit.
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+export function ScenarioPlayer({
+  scenario,
+  scenarioId,
+  tasks,
+  prior,
+}: {
+  scenario: Omit<Scenario, "tasks">;
+  scenarioId: string;
+  tasks: ClientTask[];
+  prior: PriorResponse[];
+}) {
   const [step, setStep] = useState(0);
-  const total = scenario.sections.length;
+  const hasTasks = tasks.length > 0;
+  // The Tasks panel is one extra terminal step after the last section.
+  const total = scenario.sections.length + (hasTasks ? 1 : 0);
+  const onTasksStep = hasTasks && step > scenario.sections.length;
   const latestRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -218,24 +469,37 @@ export function ScenarioPlayer({ scenario }: { scenario: Scenario }) {
           ))}
         </div>
 
-        {scenario.sections.slice(0, step).map((section, si) => (
-          <div key={si} ref={si === step - 1 ? latestRef : null}>
+        {scenario.sections
+          .slice(0, Math.min(step, scenario.sections.length))
+          .map((section, si) => (
+            <div key={si} ref={si === step - 1 ? latestRef : null}>
+              <div className="scn-divider">
+                <span className="scn-divider-line" />
+                <span className="scn-divider-text">{section.label}</span>
+                <span className="scn-divider-line" />
+              </div>
+              {section.posts.map((beat, bi) => (
+                <div
+                  key={bi}
+                  className={si === step - 1 ? "scn-reveal" : undefined}
+                  style={si === step - 1 ? { animationDelay: `${bi * 350}ms` } : undefined}
+                >
+                  <BeatCard beat={beat} />
+                </div>
+              ))}
+            </div>
+          ))}
+
+        {onTasksStep ? (
+          <div ref={latestRef} className="scn-reveal">
             <div className="scn-divider">
               <span className="scn-divider-line" />
-              <span className="scn-divider-text">{section.label}</span>
+              <span className="scn-divider-text">Tasks — Check Your Understanding</span>
               <span className="scn-divider-line" />
             </div>
-            {section.posts.map((beat, bi) => (
-              <div
-                key={bi}
-                className={si === step - 1 ? "scn-reveal" : undefined}
-                style={si === step - 1 ? { animationDelay: `${bi * 350}ms` } : undefined}
-              >
-                <BeatCard beat={beat} />
-              </div>
-            ))}
+            <TaskPanel scenarioId={scenarioId} tasks={tasks} prior={prior} />
           </div>
-        ))}
+        ) : null}
 
         {step === 0 ? (
           <p className="muted" style={{ textAlign: "center", padding: "40px 0" }}>
@@ -314,6 +578,60 @@ const SCN_CSS = `
 .scn-impact-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .scn-impact-num { font-size: 22px; font-weight: 700; }
 .scn-impact-desc { font-size: 11px; color: #4a9db5; margin-top: 3px; line-height: 1.35; }
+
+/* Tasks / Q&A panel */
+.scn-tasks { display: flex; flex-direction: column; gap: 18px; }
+.scn-tasks-intro { margin: 0; }
+.scn-task { display: flex; flex-direction: column; gap: 10px; }
+.scn-task-prompt { font-size: 15px; font-weight: 600; line-height: 1.45; display: flex; gap: 10px; }
+.scn-task-num {
+  flex: none; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--primary); color: #fff; font-size: 12px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.scn-opts { display: flex; flex-direction: column; gap: 8px; }
+.scn-opt {
+  display: flex; align-items: center; gap: 8px; text-align: left;
+  padding: 10px 12px; font-size: 14px; line-height: 1.4;
+  background: var(--card-bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.scn-opt:hover:not(:disabled) { border-color: var(--primary); }
+.scn-opt:disabled { cursor: default; }
+.scn-opt.chosen { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, var(--card-bg)); }
+.scn-opt.correct { border-color: #1c7a3e; background: color-mix(in srgb, #1c7a3e 14%, var(--card-bg)); }
+.scn-opt.wrong { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--card-bg)); }
+.scn-opt-mark { width: 14px; font-weight: 700; }
+.scn-opt.correct .scn-opt-mark { color: #1c7a3e; }
+.scn-opt.wrong .scn-opt-mark { color: var(--danger); }
+.scn-explain {
+  font-size: 13px; line-height: 1.6; color: var(--text);
+  background: var(--bg); border-left: 3px solid var(--primary);
+  border-radius: 0 8px 8px 0; padding: 10px 12px;
+}
+.scn-textarea {
+  width: 100%; resize: vertical; font: inherit; font-size: 14px; line-height: 1.5;
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--card-bg); color: var(--text);
+}
+.scn-textarea:focus { outline: none; border-color: var(--primary); }
+.scn-score {
+  font-size: 15px; padding: 12px 14px; border-radius: 10px;
+  background: var(--bg); border: 1px solid var(--border);
+}
+.scn-feedback {
+  font-size: 13px; line-height: 1.6; color: var(--text);
+  background: color-mix(in srgb, #d98a1a 12%, var(--card-bg));
+  border-left: 3px solid #d98a1a; border-radius: 0 8px 8px 0;
+  padding: 10px 12px; margin-top: 6px;
+}
+.scn-feedback strong { color: #b06f0f; }
+.scn-task-error { color: var(--danger); font-size: 13px; }
+.scn-task-buttons { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.scn-submit { padding: 10px 18px; }
+.scn-reset { padding: 10px 16px; }
+.scn-submit-hint { margin-top: -10px; }
 
 @media (max-width: 720px) {
   .scn-title { display: none; }
