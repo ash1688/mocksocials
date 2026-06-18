@@ -10,3 +10,4 @@ export * from "./posts";
 export * from "./campaign";
 export * from "./analytics";
 export * from "./scenario";
+export * from "./settings";

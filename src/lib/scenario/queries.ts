@@ -32,6 +32,24 @@ export async function getMyScenarioResponses(
     );
 }
 
+/** Per-scenario count of how many tasks the user has answered — used to mark
+ *  scenarios as completed / in-progress on the index lists. */
+export async function getMyScenarioProgress(
+  userId: number,
+): Promise<Record<string, number>> {
+  const rows = await db
+    .select({
+      scenarioId: scenarioResponses.scenarioId,
+      answered: sql<number>`count(*)::int`,
+    })
+    .from(scenarioResponses)
+    .where(eq(scenarioResponses.userId, userId))
+    .groupBy(scenarioResponses.scenarioId);
+  const map: Record<string, number> = {};
+  for (const r of rows) map[r.scenarioId] = r.answered;
+  return map;
+}
+
 /** How many of a student's answers have unseen teacher feedback — drives the
  *  "new feedback" badge in the top nav. */
 export async function countUnreadFeedback(userId: number): Promise<number> {

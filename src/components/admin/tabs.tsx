@@ -4,7 +4,7 @@ import { prettyNumber, relativeTime } from "@/lib/format";
 import { ConfirmButton } from "./confirm-button";
 import * as A from "@/lib/admin/actions";
 import type { LogLine } from "@/lib/log";
-import { getScenario, getTask } from "@/lib/scenario/registry";
+import { getScenario, getTask, listScenarios } from "@/lib/scenario/registry";
 
 type UserRow = {
   id: number;
@@ -513,11 +513,40 @@ const submissionHref = (userId: number, scenarioId: string) =>
   `/admin?tab=scenario&user=${userId}&scenario=${encodeURIComponent(scenarioId)}`;
 
 /** List view: one row per submission (student × scenario). Click through to the
- *  answers + feedback. Keeps the tab from being a wall of text. */
-export function ScenarioResponsesList({ rows }: { rows: ScenarioSubmissionRow[] }) {
+ *  answers + feedback. Keeps the tab from being a wall of text. Also hosts the
+ *  class-demo picker. */
+export function ScenarioResponsesList({
+  rows,
+  demoId,
+}: {
+  rows: ScenarioSubmissionRow[];
+  demoId: string | null;
+}) {
+  const scenarios = listScenarios();
   return (
     <>
-      <h2>Scenario Q&amp;A responses</h2>
+      <h2>Scenario Q&amp;A</h2>
+
+      <div className="card">
+        <h3>Class demo scenario</h3>
+        <p className="muted small">
+          The scenario featured at the top of everyone&apos;s Scenarios page —
+          the one you present to the class.
+        </p>
+        <form action={A.setClassDemo} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <select name="scenario_id" defaultValue={demoId ?? ""}>
+            <option value="">— None —</option>
+            {scenarios.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.title}
+              </option>
+            ))}
+          </select>
+          <button className="btn-twitter">Set class demo</button>
+        </form>
+      </div>
+
+      <h3>Submissions</h3>
       <p className="muted small">
         One row per submission — click a row to view the answers and leave
         feedback.

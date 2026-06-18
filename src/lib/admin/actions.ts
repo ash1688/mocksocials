@@ -18,6 +18,7 @@ import {
 import { requireAdmin } from "@/lib/auth/guards";
 import { hashPassword } from "@/lib/auth/password";
 import { setStat, youtubeSeed, type Platform, type YtProfile } from "@/lib/stats";
+import { setSetting, CLASS_DEMO_KEY } from "@/lib/settings";
 import { logEvent } from "@/lib/log";
 
 const STUDENT_PW = "Student26";
@@ -30,6 +31,17 @@ const back = (tab: string) => redirect(`/admin?tab=${tab}`);
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 
 // --- Scenario Q&A ------------------------------------------------------------
+/** Choose (or clear) the scenario the teacher presents to the whole class. */
+export async function setClassDemo(fd: FormData): Promise<void> {
+  const me = await actor();
+  const scenarioId = str(fd, "scenario_id");
+  await setSetting(CLASS_DEMO_KEY, scenarioId);
+  await logEvent("admin.class_demo", `scenario=${scenarioId || "(none)"}`, {
+    actor: me.username,
+  });
+  back("scenario");
+}
+
 /** Save (or clear) a teacher's feedback on one student's answer. Shown back to
  *  the student when they revisit the scenario's Tasks. */
 export async function saveScenarioFeedback(fd: FormData): Promise<void> {

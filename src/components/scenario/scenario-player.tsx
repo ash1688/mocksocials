@@ -27,6 +27,8 @@ const AV_COLORS: Record<AvKind, { bg: string; color: string }> = {
   news: { bg: "#fde8e8", color: "#c22020" },
   public: { bg: "#ece6fb", color: "#6b46c1" },
   official: { bg: "#fbf3d6", color: "#9a7a12" },
+  brand: { bg: "#fde8e8", color: "#c2202c" },
+  driver: { bg: "#fdeaef", color: "#c41e5a" },
 };
 
 function fmtNum(n: number): string {
@@ -158,6 +160,232 @@ function BeatCard({ beat }: { beat: Beat }) {
             </div>
           ))}
         </div>
+      </div>
+    );
+  }
+  if (beat.type === "silence") {
+    return (
+      <div className="card scn-silence">
+        <div className="scn-silence-title">{beat.title}</div>
+        <div className="scn-silence-rows">
+          {beat.rows.map((r, i) => (
+            <div key={i} className="scn-silence-row">
+              <span className="scn-silence-time">{r.time}</span>
+              <span className="scn-silence-event">{r.event}</span>
+              <span
+                className={`scn-silence-status ${r.responded ? "ok" : "bad"}`}
+              >
+                {r.responded ? "✓ Responded" : "● Silence"}
+              </span>
+            </div>
+          ))}
+        </div>
+        {beat.footer ? (
+          <div className="scn-silence-footer">{beat.footer}</div>
+        ) : null}
+      </div>
+    );
+  }
+  if (beat.type === "prapology") {
+    return (
+      <div className="card scn-prapology">
+        <div className="scn-prapology-title">{beat.title}</div>
+        <div className="scn-prapology-cols">
+          <div className="scn-prapology-col bad">
+            <div className="scn-prapology-label">{beat.bad.label}</div>
+            {beat.bad.points.map((p, i) => (
+              <div key={i} className="scn-prapology-point">
+                {p}
+              </div>
+            ))}
+          </div>
+          <div className="scn-prapology-col good">
+            <div className="scn-prapology-label">{beat.good.label}</div>
+            {beat.good.points.map((p, i) => (
+              <div key={i} className="scn-prapology-point">
+                {p}
+              </div>
+            ))}
+          </div>
+        </div>
+        {beat.verdict ? (
+          <div className="scn-prapology-verdict">{beat.verdict}</div>
+        ) : null}
+      </div>
+    );
+  }
+  if (beat.type === "reported") {
+    return (
+      <div className="card scn-reported">
+        <div className="scn-reported-source">{beat.source}</div>
+        <div className="scn-reported-context">{beat.context}</div>
+        <blockquote className="scn-reported-quote">
+          &ldquo;{beat.quote}&rdquo;
+        </blockquote>
+        {beat.footer ? (
+          <div className="scn-reported-footer">{beat.footer}</div>
+        ) : null}
+      </div>
+    );
+  }
+  if (beat.type === "factcheck") {
+    return (
+      <div className="card scn-factcheck">
+        <div className="scn-factcheck-title">🔍 {beat.title}</div>
+        <div className="scn-factcheck-claim">{beat.claim}</div>
+        {beat.rows.map((r, i) => (
+          <div key={i} className="scn-factcheck-row">
+            <div className="scn-factcheck-k">{r.k}</div>
+            <div className="scn-factcheck-v">{r.v}</div>
+          </div>
+        ))}
+        {beat.verdict ? (
+          <div className="scn-factcheck-verdict">
+            <strong>Verdict: </strong>
+            {beat.verdict}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+  if (beat.type === "broadcast") {
+    return (
+      <div className="card scn-broadcast">
+        <div className="scn-broadcast-top">
+          <span className="scn-broadcast-live">● LIVE</span>
+          <span className="scn-broadcast-show">{beat.show}</span>
+          <span className="scn-broadcast-seg">{beat.segment}</span>
+        </div>
+        <div className="scn-broadcast-headline">{beat.headline}</div>
+        <div className="scn-broadcast-standfirst">{beat.standfirst}</div>
+        {beat.ticker ? (
+          <div className="scn-broadcast-ticker">{beat.ticker}</div>
+        ) : null}
+      </div>
+    );
+  }
+  if (beat.type === "podcast") {
+    return (
+      <div className="card scn-podcast">
+        <div className="scn-podcast-top">
+          <span className="scn-podcast-mic">🎙️</span>
+          <span className="scn-podcast-show">{beat.show}</span>
+          <span className="scn-podcast-ep">{beat.epnum}</span>
+        </div>
+        <div className="scn-podcast-title">{beat.title}</div>
+        <div className="scn-podcast-panel">
+          {beat.panel.map((m, i) => (
+            <span key={i} className="scn-podcast-guest">
+              <span className="scn-podcast-initials">{m.initials}</span>
+              {m.name}
+            </span>
+          ))}
+        </div>
+        {beat.tagline ? (
+          <div className="scn-podcast-tagline">{beat.tagline}</div>
+        ) : null}
+      </div>
+    );
+  }
+  if (beat.type === "multilens") {
+    return (
+      <div className="card scn-multilens">
+        <div className="scn-multilens-title">{beat.title}</div>
+        {beat.lenses.map((l, i) => (
+          <div key={i} className="scn-multilens-lens">
+            <div className="scn-multilens-label">{l.label}</div>
+            <div className="scn-multilens-text">{l.text}</div>
+          </div>
+        ))}
+        {beat.footer ? (
+          <div className="scn-multilens-footer">{beat.footer}</div>
+        ) : null}
+      </div>
+    );
+  }
+  if (beat.type === "counttimeline") {
+    return (
+      <div className="card scn-ctl">
+        <div className="scn-ctl-title">{beat.title}</div>
+        <div className="scn-ctl-rows">
+          {beat.rows.map((r, i) => (
+            <div key={i} className={`scn-ctl-row ${r.final ? "final" : ""}`}>
+              <span className="scn-ctl-date">{r.date}</span>
+              <span className="scn-ctl-event">{r.event}</span>
+              <span className="scn-ctl-count">{r.count}</span>
+            </div>
+          ))}
+        </div>
+        {beat.footer ? (
+          <div className="scn-ctl-footer">{beat.footer}</div>
+        ) : null}
+      </div>
+    );
+  }
+  if (beat.type === "consequences") {
+    return (
+      <div className="card scn-conseq">
+        <div className="scn-conseq-title">{beat.title}</div>
+        {beat.items.map((it, i) => (
+          <div key={i} className="scn-conseq-item">
+            <div className="scn-conseq-icon">{it.icon}</div>
+            <div>
+              <div className="scn-conseq-label">{it.label}</div>
+              <div className="scn-conseq-detail">{it.detail}</div>
+            </div>
+          </div>
+        ))}
+        {beat.footer ? (
+          <div className="scn-conseq-footer">{beat.footer}</div>
+        ) : null}
+      </div>
+    );
+  }
+  if (beat.type === "terrace") {
+    return (
+      <div className="card scn-terrace">
+        <div className="scn-terrace-top">
+          <span className="scn-terrace-live">● LIVE</span>
+          <span className="scn-terrace-stadium">{beat.stadium}</span>
+        </div>
+        <div className="scn-terrace-chants">
+          {beat.chants.map((c, i) => (
+            <div key={i} className="scn-terrace-chant">
+              {c}
+            </div>
+          ))}
+        </div>
+        {beat.note ? (
+          <div className="scn-terrace-note">{beat.note}</div>
+        ) : null}
+      </div>
+    );
+  }
+  if (beat.type === "twolesson") {
+    return (
+      <div className="card scn-twolesson">
+        <div className="scn-twolesson-title">{beat.title}</div>
+        <div className="scn-twolesson-cols">
+          <div className="scn-twolesson-col left">
+            <div className="scn-twolesson-label">{beat.left.label}</div>
+            {beat.left.points.map((p, i) => (
+              <div key={i} className="scn-twolesson-point">
+                {p}
+              </div>
+            ))}
+          </div>
+          <div className="scn-twolesson-col right">
+            <div className="scn-twolesson-label">{beat.right.label}</div>
+            {beat.right.points.map((p, i) => (
+              <div key={i} className="scn-twolesson-point">
+                {p}
+              </div>
+            ))}
+          </div>
+        </div>
+        {beat.verdict ? (
+          <div className="scn-twolesson-verdict">{beat.verdict}</div>
+        ) : null}
       </div>
     );
   }
@@ -571,6 +799,127 @@ const SCN_CSS = `
 .scn-verdict-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .scn-verdict-heading { font-size: 20px; font-weight: 700; margin: 6px 0 10px; }
 .scn-verdict-body { font-size: 14px; line-height: 1.7; color: var(--text); }
+
+/* Silence timer */
+.scn-silence { border-left: 4px solid var(--danger); }
+.scn-silence-title { font-size: 15px; font-weight: 700; color: var(--danger); margin-bottom: 8px; }
+.scn-silence-rows { display: flex; flex-direction: column; }
+.scn-silence-row { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px dashed var(--border); }
+.scn-silence-row:last-child { border-bottom: none; }
+.scn-silence-time { flex: none; width: 78px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.scn-silence-event { flex: 1; font-size: 13px; line-height: 1.45; color: var(--text); }
+.scn-silence-status { flex: none; font-size: 12px; font-weight: 700; text-align: right; min-width: 92px; }
+.scn-silence-status.bad { color: var(--danger); }
+.scn-silence-status.ok { color: #1c7a3e; }
+.scn-silence-footer { margin-top: 10px; font-size: 12px; font-style: italic; color: var(--muted); line-height: 1.5; }
+
+/* PR apology vs real apology */
+.scn-prapology-title { font-size: 15px; font-weight: 700; text-align: center; margin-bottom: 12px; }
+.scn-prapology-cols { display: flex; gap: 10px; align-items: stretch; }
+.scn-prapology-col { flex: 1; border-radius: 8px; padding: 12px; }
+.scn-prapology-col.bad { background: color-mix(in srgb, var(--danger) 8%, var(--card-bg)); border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border)); }
+.scn-prapology-col.good { background: color-mix(in srgb, #1c7a3e 10%, var(--card-bg)); border: 1px solid color-mix(in srgb, #1c7a3e 30%, var(--border)); }
+.scn-prapology-label { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 8px; }
+.scn-prapology-col.bad .scn-prapology-label { color: var(--danger); }
+.scn-prapology-col.good .scn-prapology-label { color: #1c7a3e; }
+.scn-prapology-point { font-size: 12.5px; line-height: 1.5; color: var(--text); margin-bottom: 7px; padding-left: 16px; position: relative; }
+.scn-prapology-col.bad .scn-prapology-point::before { content: "✗"; position: absolute; left: 0; color: var(--danger); font-weight: 700; }
+.scn-prapology-col.good .scn-prapology-point::before { content: "✓"; position: absolute; left: 0; color: #1c7a3e; font-weight: 700; }
+.scn-prapology-verdict { margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--border); font-size: 13px; font-style: italic; text-align: center; color: var(--muted); line-height: 1.5; }
+
+/* Reported quote */
+.scn-reported { border-left: 3px solid #d98a1a; }
+.scn-reported-source { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #d98a1a; margin-bottom: 8px; }
+.scn-reported-context { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+.scn-reported-quote { font-size: 18px; font-weight: 600; line-height: 1.4; color: var(--text); padding: 6px 0 6px 14px; border-left: 2px solid var(--muted); margin: 0 0 10px; }
+.scn-reported-footer { font-size: 12px; font-style: italic; color: var(--muted); line-height: 1.5; }
+
+/* Fact-check */
+.scn-factcheck-title { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+.scn-factcheck-claim { background: color-mix(in srgb, var(--danger) 10%, var(--card-bg)); border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border)); border-left: 3px solid var(--danger); border-radius: 6px; padding: 10px 12px; font-size: 14px; font-style: italic; color: var(--text); margin-bottom: 12px; }
+.scn-factcheck-row { padding: 8px 0; border-bottom: 1px dashed var(--border); }
+.scn-factcheck-row:last-of-type { border-bottom: none; }
+.scn-factcheck-k { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); margin-bottom: 3px; }
+.scn-factcheck-v { font-size: 13px; line-height: 1.45; color: var(--text); }
+.scn-factcheck-verdict { margin-top: 12px; padding: 10px 12px; background: color-mix(in srgb, #1c7a3e 10%, var(--card-bg)); border: 1px solid color-mix(in srgb, #1c7a3e 30%, var(--border)); border-radius: 6px; font-size: 13px; line-height: 1.5; color: var(--text); }
+.scn-factcheck-verdict strong { color: #1c7a3e; }
+
+/* Two-lesson / two-trap */
+.scn-twolesson-title { font-size: 15px; font-weight: 700; text-align: center; margin-bottom: 12px; }
+.scn-twolesson-cols { display: flex; gap: 10px; align-items: stretch; }
+.scn-twolesson-col { flex: 1; border-radius: 8px; padding: 12px; }
+.scn-twolesson-col.left { background: color-mix(in srgb, #d98a1a 10%, var(--card-bg)); border: 1px solid color-mix(in srgb, #d98a1a 30%, var(--border)); }
+.scn-twolesson-col.right { background: color-mix(in srgb, var(--primary) 8%, var(--card-bg)); border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border)); }
+.scn-twolesson-label { font-size: 11px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; margin-bottom: 8px; }
+.scn-twolesson-col.left .scn-twolesson-label { color: #d98a1a; }
+.scn-twolesson-col.right .scn-twolesson-label { color: var(--primary); }
+.scn-twolesson-point { font-size: 12.5px; line-height: 1.5; color: var(--text); margin-bottom: 7px; padding-left: 14px; position: relative; }
+.scn-twolesson-point::before { content: "›"; position: absolute; left: 0; color: var(--muted); font-weight: 700; }
+.scn-twolesson-verdict { margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--border); font-size: 13px; font-style: italic; text-align: center; color: var(--muted); line-height: 1.5; }
+
+/* Broadcast segment */
+.scn-broadcast { border-left: 4px solid var(--primary); }
+.scn-broadcast-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.scn-broadcast-live { font-size: 11px; font-weight: 800; color: var(--danger); letter-spacing: 0.04em; }
+.scn-broadcast-show { font-size: 12px; font-weight: 700; color: var(--text); }
+.scn-broadcast-seg { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.scn-broadcast-headline { font-size: 16px; font-weight: 700; line-height: 1.35; margin-bottom: 6px; }
+.scn-broadcast-standfirst { font-size: 13px; color: var(--text); line-height: 1.55; }
+.scn-broadcast-ticker { margin-top: 10px; background: var(--primary); color: #fff; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; padding: 6px 10px; border-radius: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Podcast */
+.scn-podcast { border-left: 4px solid #6b46c1; }
+.scn-podcast-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.scn-podcast-show { font-size: 12px; font-weight: 700; }
+.scn-podcast-ep { font-size: 11px; color: var(--muted); }
+.scn-podcast-title { font-size: 15px; font-weight: 700; line-height: 1.35; margin-bottom: 10px; }
+.scn-podcast-panel { display: flex; flex-wrap: wrap; gap: 8px; }
+.scn-podcast-guest { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px 3px 3px; }
+.scn-podcast-initials { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #6b46c1; color: #fff; font-size: 10px; font-weight: 700; }
+.scn-podcast-tagline { margin-top: 10px; font-size: 12px; font-style: italic; color: var(--muted); line-height: 1.5; }
+
+/* Multi-lens perspectives */
+.scn-multilens-title { font-size: 15px; font-weight: 700; text-align: center; margin-bottom: 12px; }
+.scn-multilens-lens { padding: 8px 0 8px 12px; border-left: 3px solid var(--primary); margin-bottom: 8px; }
+.scn-multilens-lens:nth-child(2) { border-left-color: #d98a1a; }
+.scn-multilens-lens:nth-child(3) { border-left-color: #1c7a3e; }
+.scn-multilens-lens:nth-child(4) { border-left-color: #6b46c1; }
+.scn-multilens-lens:nth-child(5) { border-left-color: var(--danger); }
+.scn-multilens-label { font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.scn-multilens-text { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.scn-multilens-footer { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; font-style: italic; text-align: center; color: var(--muted); line-height: 1.5; }
+
+/* Count timeline (escalation) */
+.scn-ctl { border-left: 4px solid #d98a1a; }
+.scn-ctl-title { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+.scn-ctl-rows { display: flex; flex-direction: column; }
+.scn-ctl-row { display: flex; gap: 10px; align-items: baseline; padding: 8px 0; border-bottom: 1px dashed var(--border); }
+.scn-ctl-row:last-child { border-bottom: none; }
+.scn-ctl-date { flex: none; width: 96px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.scn-ctl-event { flex: 1; font-size: 13px; line-height: 1.45; color: var(--text); }
+.scn-ctl-count { flex: none; font-size: 14px; font-weight: 700; color: var(--text); text-align: right; min-width: 64px; }
+.scn-ctl-row.final { background: color-mix(in srgb, #d98a1a 12%, var(--card-bg)); border-radius: 6px; padding: 8px 8px; margin-top: 4px; border-bottom: none; }
+.scn-ctl-row.final .scn-ctl-count { color: #d98a1a; font-size: 16px; }
+.scn-ctl-footer { margin-top: 10px; font-size: 12px; font-style: italic; color: var(--muted); line-height: 1.5; }
+
+/* Consequences tally */
+.scn-conseq { border-left: 4px solid var(--danger); }
+.scn-conseq-title { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+.scn-conseq-item { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; border-bottom: 1px dashed var(--border); }
+.scn-conseq-item:last-of-type { border-bottom: none; }
+.scn-conseq-icon { font-size: 20px; flex: none; width: 26px; text-align: center; }
+.scn-conseq-label { font-size: 14px; font-weight: 600; color: var(--text); }
+.scn-conseq-detail { font-size: 13px; color: var(--muted); line-height: 1.45; margin-top: 1px; }
+.scn-conseq-footer { margin-top: 10px; font-size: 12px; font-style: italic; color: var(--muted); line-height: 1.5; }
+
+/* Terrace / live crowd */
+.scn-terrace { border-left: 4px solid #d98a1a; }
+.scn-terrace-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.scn-terrace-live { font-size: 11px; font-weight: 800; color: var(--danger); letter-spacing: 0.04em; }
+.scn-terrace-stadium { font-size: 14px; font-weight: 700; color: var(--text); }
+.scn-terrace-chants { display: flex; flex-direction: column; gap: 7px; }
+.scn-terrace-chant { font-size: 13.5px; line-height: 1.5; color: var(--text); }
+.scn-terrace-note { margin-top: 10px; font-size: 12px; font-style: italic; color: var(--muted); line-height: 1.5; }
 
 .scn-impact { background: linear-gradient(135deg, #0f2027, #1a3a4a); border-color: #1d4a5e; color: #fff; }
 .scn-impact-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #4a9db5; font-weight: 600; }

@@ -10,7 +10,9 @@ export type AvKind =
   | "mr"
   | "news"
   | "public"
-  | "official";
+  | "official"
+  | "brand" // an organisation/company account (e.g. Domino's)
+  | "driver"; // a competitor/athlete account (e.g. an F1 driver)
 
 export type Platform = "MockTweet" | "MockTube";
 
@@ -56,7 +58,121 @@ export interface VerdictCard {
   body: string;
 }
 
-export type Beat = ScenarioPost | TrendCard | ImpactCard | VerdictCard;
+/** A timeline of (in)action — e.g. hours of silence during a crisis. Each row
+ *  is flagged as a responded step or a silent one. */
+export interface SilenceCard {
+  type: "silence";
+  title: string;
+  rows: { time: string; event: string; responded: boolean }[];
+  footer?: string;
+}
+
+/** Side-by-side contrast of a hollow PR apology vs a real one. */
+export interface PrApologyCard {
+  type: "prapology";
+  title: string;
+  bad: { label: string; points: string[] };
+  good: { label: string; points: string[] };
+  verdict?: string;
+}
+
+/** A pulled-out reported quote (authored documentary citation). */
+export interface ReportedCard {
+  type: "reported";
+  source: string;
+  context: string;
+  quote: string;
+  footer?: string;
+}
+
+/** A fact-check of a viral claim: the claim, what's actually true, a verdict. */
+export interface FactCheckCard {
+  type: "factcheck";
+  title: string;
+  claim: string;
+  rows: { k: string; v: string }[];
+  verdict?: string;
+}
+
+/** Two parallel ideas side by side (e.g. two traps / two lessons). Neutral —
+ *  unlike PrApologyCard's bad-vs-good framing. */
+export interface TwoLessonCard {
+  type: "twolesson";
+  title: string;
+  left: { label: string; points: string[] };
+  right: { label: string; points: string[] };
+  verdict?: string;
+}
+
+/** A tally of real-world consequences (each with an icon, headline and detail). */
+export interface ConsequencesCard {
+  type: "consequences";
+  title: string;
+  items: { icon: string; label: string; detail: string }[];
+  footer?: string;
+}
+
+/** A "live" crowd/terrace card — collective public reaction in a venue. */
+export interface TerraceCard {
+  type: "terrace";
+  stadium: string;
+  chants: string[];
+  note?: string;
+}
+
+/** A TV/broadcast segment framing — show, segment, headline, standfirst, ticker. */
+export interface BroadcastCard {
+  type: "broadcast";
+  show: string;
+  segment: string;
+  headline: string;
+  standfirst: string;
+  ticker?: string;
+}
+
+/** A podcast episode card with a named panel. */
+export interface PodcastCard {
+  type: "podcast";
+  show: string;
+  epnum: string;
+  title: string;
+  panel: { name: string; initials: string }[];
+  tagline?: string;
+}
+
+/** Several honest perspectives on one complex issue (resist-the-binary device). */
+export interface MultiLensCard {
+  type: "multilens";
+  title: string;
+  lenses: { label: string; text: string }[];
+  footer?: string;
+}
+
+/** A dated escalation timeline with a running count (e.g. complaints over time);
+ *  the row flagged `final` is the headline total. */
+export interface CountTimelineCard {
+  type: "counttimeline";
+  title: string;
+  rows: { date: string; event: string; count: string; final?: boolean }[];
+  footer?: string;
+}
+
+export type Beat =
+  | ScenarioPost
+  | TrendCard
+  | ImpactCard
+  | VerdictCard
+  | SilenceCard
+  | PrApologyCard
+  | ReportedCard
+  | FactCheckCard
+  | TwoLessonCard
+  | ConsequencesCard
+  | TerraceCard
+  | BroadcastCard
+  | PodcastCard
+  | MultiLensCard
+  | CountTimelineCard;
 
 export interface ScenarioSection {
   label: string;

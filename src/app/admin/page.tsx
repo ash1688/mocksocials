@@ -23,6 +23,7 @@ import {
   getScenarioSubmission,
   listSessions,
 } from "@/lib/admin/queries";
+import { getSetting, CLASS_DEMO_KEY } from "@/lib/settings";
 import { readLog } from "@/lib/log";
 
 // Faithful port of PHP handle_admin() — tabbed admin panel (admin-only).
@@ -63,7 +64,12 @@ export default async function AdminPage({
           <ScenarioResponseDetail rows={await getScenarioSubmission(uid, scn)} />
         );
       } else {
-        body = <ScenarioResponsesList rows={await listScenarioSubmissions()} />;
+        body = (
+          <ScenarioResponsesList
+            rows={await listScenarioSubmissions()}
+            demoId={await getSetting(CLASS_DEMO_KEY)}
+          />
+        );
       }
       break;
     }

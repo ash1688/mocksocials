@@ -63,8 +63,8 @@ export async function AppChrome({
         />
         <span>{user.displayName}</span>
         <Link href="/campaigns">Campaigns</Link>
-        <Link href="/scenario" style={{ position: "relative" }}>
-          Scenario
+        <Link href="/scenarios" style={{ position: "relative" }}>
+          Scenarios
           {unreadFeedback > 0 ? (
             <span
               title={`${unreadFeedback} new piece(s) of teacher feedback`}
