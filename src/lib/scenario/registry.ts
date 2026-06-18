@@ -18,6 +18,7 @@ import { PEPSI_SCENARIO } from "./pepsi";
 import { DIGIORNO_SCENARIO } from "./digiorno";
 import { SNICKERS_SCENARIO } from "./snickers";
 import { FREECUTHBERT_SCENARIO } from "./freecuthbert";
+import { BEERJUICE_SCENARIO } from "./beerjuice";
 import type { Scenario, ScenarioTask } from "./red-bull";
 
 // All authored scenarios, keyed by id. Future ports register here so both the
@@ -44,6 +45,7 @@ export const SCENARIOS: Record<string, Scenario> = {
   [DIGIORNO_SCENARIO.id]: DIGIORNO_SCENARIO,
   [SNICKERS_SCENARIO.id]: SNICKERS_SCENARIO,
   [FREECUTHBERT_SCENARIO.id]: FREECUTHBERT_SCENARIO,
+  [BEERJUICE_SCENARIO.id]: BEERJUICE_SCENARIO,
 };
 
 export function getScenario(id: string): Scenario | undefined {
