@@ -1,0 +1,35 @@
+# Build artefacts + deps — rebuilt inside the image.
+node_modules
+.next
+out
+build
+dist
+
+# VCS / CI / editor
+.git
+.gitignore
+.github
+.idea
+.vscode
+
+# Local env + secrets — injected by Dokploy at runtime, never baked in.
+.env
+.env*.local
+
+# Logs + caches
+logs
+*.log
+npm-debug.log*
+*.tsbuildinfo
+
+# Local-only / WIP (mirrors .gitignore)
+scenarios
+docs/mocksocial_php.sql
+.claude
+dev-server.log
+
+# Docker + docs not needed in the build context
+Dockerfile
+.dockerignore
+docker-compose.yml
+README.md
