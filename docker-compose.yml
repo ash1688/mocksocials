@@ -1,6 +1,6 @@
 # MockSocial — Dokploy deployment (physical Ubuntu/Dokploy box, IP+port mode).
 #
-# Host port 8084 is mocksocial's allocation in ../port-registry.md. Only that
+# Host port 8089 is mocksocial's allocation in ../port-registry.md. Only that
 # host port must be unique; the container-internal 3000 can stay as-is.
 # The database publishes NO port — it stays internal-only (registry line 31).
 #
@@ -8,7 +8,7 @@
 #   POSTGRES_PASSWORD   — DB password (also used in DATABASE_URL below)
 #   SESSION_SECRET      — long random string for cookie signing
 #
-# On the host firewall after first deploy:  sudo ufw allow 8084/tcp
+# On the host firewall after first deploy:  sudo ufw allow 8089/tcp
 
 services:
   db:
@@ -53,8 +53,8 @@ services:
       DATABASE_URL: postgresql://mocksocial:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/mocksocial
       SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
     ports:
-      # host 8084 (unique per registry)  ->  container 3000 (Next standalone)
-      - "8084:3000"
+      # host 8089 (unique per registry)  ->  container 3000 (Next standalone)
+      - "8089:3000"
     depends_on:
       db:
         condition: service_healthy
