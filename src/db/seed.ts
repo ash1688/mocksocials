@@ -129,6 +129,20 @@ const COMMENT_POOL = [
 ];
 
 async function main() {
+  // --if-empty: skip when the DB already has accounts (used by the compose
+  // `migrate` service so redeploys never wipe existing data — see DEPLOY.md).
+  if (process.argv.includes("--if-empty")) {
+    const [{ count }] = (
+      await db.execute(sql`SELECT count(*)::int AS count FROM users`)
+    ) as unknown as [{ count: number }];
+    if (count > 0) {
+      console.log(`--if-empty: ${count} existing user(s), skipping seed.`);
+      await db.$client.end();
+      return;
+    }
+    console.log("--if-empty: database is empty, seeding…");
+  }
+
   console.log("Clearing seeded content + accounts…");
   // Order matters for FKs; TRUNCATE … CASCADE handles dependents.
   await db.execute(

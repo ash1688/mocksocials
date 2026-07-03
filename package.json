@@ -19,6 +19,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/db/seed.ts",
+    "db:seed:if-empty": "tsx src/db/seed.ts --if-empty",
     "test": "vitest run",
     "test:watch": "vitest"
   },

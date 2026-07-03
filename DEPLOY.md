@@ -35,7 +35,7 @@ repo's `.env` is git-ignored and excluded from the image via `.dockerignore`.
 - Deploy. On first run, Compose will:
   1. start `db` (Postgres 16) and wait until it's healthy,
   2. run the one-shot `migrate` service (`npm run db:migrate`, applies the SQL
-     in `./drizzle`),
+     in `./drizzle`, then seeds the demo scenario — only if the DB is empty),
   3. start `app` once migration completes, published on host port `8084`.
 
 ### 3. Open the host firewall
@@ -46,9 +46,13 @@ On the Ubuntu box:
 sudo ufw allow 8084/tcp
 ```
 
-### 4. (Optional) Seed demo data
+### 4. Demo data (seeds itself)
 
-The migration creates the schema but does not seed. To load the fixed scenario:
+Seeding is automatic: the `migrate` service runs `db:seed:if-empty` after the
+migrations, which loads the fixed scenario **only when the database is empty**
+(first deploy). Redeploys skip it, so existing accounts/posts are never wiped.
+
+To force a full re-seed (wipes all data back to the fixed scenario):
 
 ```bash
 docker compose run --rm migrate npm run db:seed

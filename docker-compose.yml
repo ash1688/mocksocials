@@ -27,13 +27,15 @@ services:
       timeout: 5s
       retries: 10
 
-  # One-shot: apply SQL migrations from ./drizzle, then exit. Built from the
-  # `builder` stage (keeps drizzle-kit + schema + drizzle.config.ts).
+  # One-shot: apply SQL migrations from ./drizzle, then seed the demo scenario
+  # if (and only if) the database is empty — first deploy seeds, redeploys
+  # don't touch existing data. Built from the `builder` stage (keeps
+  # drizzle-kit + tsx + schema + drizzle.config.ts).
   migrate:
     build:
       context: .
       target: builder
-    command: ["npm", "run", "db:migrate"]
+    command: ["sh", "-c", "npm run db:migrate && npm run db:seed:if-empty"]
     environment:
       DATABASE_URL: postgresql://mocksocial:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/mocksocial
     depends_on:
