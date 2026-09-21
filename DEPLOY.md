@@ -2,11 +2,11 @@
 
 MockSocial ships as a Docker image (Next.js standalone) plus an internal-only
 Postgres. It runs on the physical Ubuntu/Dokploy box in **IP + port mode** —
-reached at `http://<server-ip>:8084/`, not via a domain.
+reached at `http://<server-ip>:8089/`, not via a domain.
 
-- **Host port: `8084`** (mocksocial's allocation in `../port-registry.md`).
+- **Host port: `8089`** (mocksocial's allocation in `../port-registry.md`).
 - **Container-internal port: `3000`** (Next standalone default — do **not** change).
-- Mapping is `8084:3000`. The DB publishes **no** port; it stays internal-only.
+- Mapping is `8089:3000`. The DB publishes **no** port; it stays internal-only.
 
 The build has been verified locally (`docker build` → standalone runner image, exit 0).
 
@@ -36,14 +36,14 @@ repo's `.env` is git-ignored and excluded from the image via `.dockerignore`.
   1. start `db` (Postgres 16) and wait until it's healthy,
   2. run the one-shot `migrate` service (`npm run db:migrate`, applies the SQL
      in `./drizzle`, then seeds the demo scenario — only if the DB is empty),
-  3. start `app` once migration completes, published on host port `8084`.
+  3. start `app` once migration completes, published on host port `8089`.
 
 ### 3. Open the host firewall
 
 On the Ubuntu box:
 
 ```bash
-sudo ufw allow 8084/tcp
+sudo ufw allow 8089/tcp
 ```
 
 ### 4. Demo data (seeds itself)
@@ -60,17 +60,20 @@ docker compose run --rm migrate npm run db:seed
 
 ### 5. Verify
 
-Browse to `http://<server-ip>:8084/` — you should reach the login page.
+Browse to `http://<server-ip>:8089/` — you should reach the login page.
 
 ---
 
 ## Notes / gotchas
 
 - **Port 3000 is the Dokploy dashboard** (a *host* port). MockSocial's *internal*
-  3000 is isolated on its own Docker network and is mapped to host **8084**, so
+  3000 is isolated on its own Docker network and is mapped to host **8089**, so
   there is no conflict — just never map it to host `3000`.
-- **Registry naming:** `../port-registry.md` lists this app as "mocksocial**s**"
-  (plural) at 8084. Same app — fix the row for consistency if you like.
+- **Session cookie over plain HTTP:** browsers drop `Secure` cookies on
+  `http://<ip>:<port>`, so compose sets `SESSION_COOKIE_SECURE=false`. Without it
+  login silently bounces back to `/login`. Set it to `true` only behind HTTPS.
+- **Activity log:** `logs/app.log` lives in the `mocksocial-logs` volume, so the
+  teacher/admin log viewer keeps its history across redeploys.
 - **Postgres major version:** the image is `postgres:16-alpine`. If you restore a
   dump from a different major version, align the image tag first.
 - **Migrations vs. push:** deploy runs `db:migrate` (the committed SQL files), not

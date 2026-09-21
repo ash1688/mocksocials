@@ -52,6 +52,12 @@ services:
       NODE_ENV: production
       DATABASE_URL: postgresql://mocksocial:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/mocksocial
       SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
+      # IP+port mode is plain HTTP: browsers drop `Secure` cookies there, so
+      # login would silently fail. Set to "true" if this ever goes behind TLS.
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+    volumes:
+      # Activity log (teacher/admin log viewer) — persists across redeploys.
+      - mocksocial-logs:/app/logs
     ports:
       # host 8089 (unique per registry)  ->  container 3000 (Next standalone)
       - "8089:3000"
@@ -63,3 +69,4 @@ services:
 
 volumes:
   mocksocial-db:
+  mocksocial-logs:

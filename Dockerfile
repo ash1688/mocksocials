@@ -38,7 +38,12 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
 # Run as the non-root user shipped in the base image.
-RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
+RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001 -G nodejs
+
+# Activity log (src/lib/log.ts) appends to <cwd>/logs/app.log. /app is
+# root-owned, so pre-create the dir for the app user; compose mounts a named
+# volume here (which inherits this ownership) so the log survives redeploys.
+RUN mkdir -p /app/logs && chown nextjs:nodejs /app/logs
 
 # Standalone output: server.js + traced node_modules, then static + public.
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
@@ -47,7 +52,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 USER nextjs
 
-# Container-internal port. The unique HOST port (8084 for mocksocial) is mapped
+# Container-internal port. The unique HOST port (8089 for mocksocial) is mapped
 # in docker-compose.yml / Dokploy — see ../port-registry.md.
 EXPOSE 3000
 
