@@ -8,12 +8,18 @@
 #     ports bypass ufw, so binding 0.0.0.0 would expose plain HTTP to everyone;
 #   - the seeded admin password must be supplied, never the `staff` default.
 #
+# Images are PREBUILT by .github/workflows/docker-publish.yml and pulled from
+# GHCR — the VPS never builds. To build locally instead, layer the override:
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up --build
+#
 # Env to provide via Dokploy (Environment tab) — see DEPLOY.md:
 #   POSTGRES_PASSWORD      — DB password (also used in DATABASE_URL below)
 #   SESSION_SECRET         — long random string
 #   SEED_STAFF_PASSWORD    — password for the seeded `staff` admin account
 #   SEED_STUDENT_PASSWORD  — password for the seeded student accounts
 # Optional:
+#   IMAGE_TAG              — image tag to pull (default `vps` = latest build;
+#                            pin `sha-<short>` to roll back)
 #   APP_BIND / APP_PORT    — host bind address / port (default 127.0.0.1:8089)
 #   SESSION_COOKIE_SECURE  — default true (HTTPS). false ONLY for plain HTTP.
 
@@ -36,12 +42,11 @@ services:
 
   # One-shot: apply SQL migrations from ./drizzle, then seed the demo scenario
   # if (and only if) the database is empty — first deploy seeds, redeploys
-  # don't touch existing data. Built from the `builder` stage (keeps
+  # don't touch existing data. Image = the Dockerfile `builder` stage (keeps
   # drizzle-kit + tsx + schema + drizzle.config.ts).
   migrate:
-    build:
-      context: .
-      target: builder
+    image: ghcr.io/ash1688/mocksocials-migrate:${IMAGE_TAG:-vps}
+    pull_policy: always
     command: ["sh", "-c", "npm run db:migrate && npm run db:seed:if-empty"]
     environment:
       DATABASE_URL: postgresql://mocksocial:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/mocksocial
@@ -55,9 +60,8 @@ services:
     restart: "no"
 
   app:
-    build:
-      context: .
-      target: runner
+    image: ghcr.io/ash1688/mocksocials:${IMAGE_TAG:-vps}
+    pull_policy: always
     restart: unless-stopped
     environment:
       NODE_ENV: production

@@ -31,5 +31,5 @@ dev-server.log
 # Docker + docs not needed in the build context
 Dockerfile
 .dockerignore
-docker-compose.yml
+docker-compose*.yml
 README.md

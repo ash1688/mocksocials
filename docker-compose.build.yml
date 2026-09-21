@@ -1,0 +1,16 @@
+# Local-build override — NOT used by Dokploy (the VPS pulls prebuilt images).
+# Builds the same two images from source and tags them with the GHCR names:
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up --build
+
+services:
+  migrate:
+    build:
+      context: .
+      target: builder
+    pull_policy: build
+
+  app:
+    build:
+      context: .
+      target: runner
+    pull_policy: build
