@@ -1,14 +1,21 @@
-# MockSocial — Dokploy deployment (physical Ubuntu/Dokploy box, IP+port mode).
+# MockSocial — Dokploy deployment on a PUBLIC VPS (branch: deploy/vps).
 #
-# Host port 8089 is mocksocial's allocation in ../port-registry.md. Only that
-# host port must be unique; the container-internal 3000 can stay as-is.
-# The database publishes NO port — it stays internal-only (registry line 31).
+# The college-LAN variant (IP+port mode, host port 8089) lives on `ts-faithful`.
+# This one assumes the box is on the open internet, so:
+#   - the app is reached through Dokploy's Traefik on a domain with HTTPS
+#     (add it in Dokploy → Domains: service `app`, container port 3000);
+#   - the host port is bound to LOOPBACK only by default. Docker-published
+#     ports bypass ufw, so binding 0.0.0.0 would expose plain HTTP to everyone;
+#   - the seeded admin password must be supplied, never the `staff` default.
 #
-# Env to provide via Dokploy (or a local .env for testing):
-#   POSTGRES_PASSWORD   — DB password (also used in DATABASE_URL below)
-#   SESSION_SECRET      — long random string for cookie signing
-#
-# On the host firewall after first deploy:  sudo ufw allow 8089/tcp
+# Env to provide via Dokploy (Environment tab) — see DEPLOY.md:
+#   POSTGRES_PASSWORD      — DB password (also used in DATABASE_URL below)
+#   SESSION_SECRET         — long random string
+#   SEED_STAFF_PASSWORD    — password for the seeded `staff` admin account
+#   SEED_STUDENT_PASSWORD  — password for the seeded student accounts
+# Optional:
+#   APP_BIND / APP_PORT    — host bind address / port (default 127.0.0.1:8089)
+#   SESSION_COOKIE_SECURE  — default true (HTTPS). false ONLY for plain HTTP.
 
 services:
   db:
@@ -38,6 +45,10 @@ services:
     command: ["sh", "-c", "npm run db:migrate && npm run db:seed:if-empty"]
     environment:
       DATABASE_URL: postgresql://mocksocial:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/mocksocial
+      # Only read on the first (empty-DB) deploy. Changing them later does NOT
+      # change existing accounts.
+      SEED_STAFF_PASSWORD: ${SEED_STAFF_PASSWORD:?set SEED_STAFF_PASSWORD}
+      SEED_STUDENT_PASSWORD: ${SEED_STUDENT_PASSWORD:?set SEED_STUDENT_PASSWORD}
     depends_on:
       db:
         condition: service_healthy
@@ -52,15 +63,21 @@ services:
       NODE_ENV: production
       DATABASE_URL: postgresql://mocksocial:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/mocksocial
       SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
-      # IP+port mode is plain HTTP: browsers drop `Secure` cookies there, so
-      # login would silently fail. Set to "true" if this ever goes behind TLS.
-      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      # HTTPS via Traefik → keep the cookie Secure. Browsers drop Secure cookies
+      # on plain HTTP, so set "false" only if you serve without TLS.
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
     volumes:
       # Activity log (teacher/admin log viewer) — persists across redeploys.
       - mocksocial-logs:/app/logs
     ports:
-      # host 8089 (unique per registry)  ->  container 3000 (Next standalone)
-      - "8089:3000"
+      # Loopback-only by default: public traffic comes in via Traefik, and this
+      # stays handy for an SSH tunnel (`ssh -L 8089:127.0.0.1:8089 <vps>`).
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-8089}:3000"
+    networks:
+      # Declared explicitly: when a domain is attached Dokploy appends
+      # `dokploy-network` to this list. Without `default` here the app would
+      # land on Traefik's network only and lose the `db` hostname.
+      - default
     depends_on:
       db:
         condition: service_healthy

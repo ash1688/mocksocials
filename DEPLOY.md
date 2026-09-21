@@ -1,77 +1,111 @@
-# Deploying MockSocial to Dokploy
+# Deploying MockSocial to Dokploy — public VPS
+
+> Branch **`deploy/vps`**. For the college-LAN box (IP + port `8089`, plain HTTP)
+> deploy from `ts-faithful` instead — that variant must not face the internet.
 
 MockSocial ships as a Docker image (Next.js standalone) plus an internal-only
-Postgres. It runs on the physical Ubuntu/Dokploy box in **IP + port mode** —
-reached at `http://<server-ip>:8089/`, not via a domain.
+Postgres. On a VPS it is reached at **`https://<your-domain>/`** through
+Dokploy's Traefik, which also issues the Let's Encrypt certificate.
 
-- **Host port: `8089`** (mocksocial's allocation in `../port-registry.md`).
-- **Container-internal port: `3000`** (Next standalone default — do **not** change).
-- Mapping is `8089:3000`. The DB publishes **no** port; it stays internal-only.
-
-The build has been verified locally (`docker build` → standalone runner image, exit 0).
+- **Container port: `3000`** (Next standalone default — do **not** change).
+- **Host port:** `127.0.0.1:8089` — loopback only, not reachable from outside.
+  Public traffic goes domain → Traefik → container.
+- The DB publishes **no** port; it stays internal-only.
 
 ---
 
 ## What you must do
 
-### 1. Set the secrets in Dokploy (Environment tab)
+### 1. Point a domain at the VPS
 
-| Variable | Value |
-|----------|-------|
-| `POSTGRES_PASSWORD` | a long random string (DB password) |
-| `SESSION_SECRET` | a long random string (signs session cookies) |
-
-Generate each with e.g. `openssl rand -hex 32`. Do **not** commit these — the
-repo's `.env` is git-ignored and excluded from the image via `.dockerignore`.
-
-`DATABASE_URL` is built automatically from `POSTGRES_PASSWORD` inside
-`docker-compose.yml`, so you do not set it by hand.
+Create a DNS **A record** (e.g. `mocksocial.example.com`) → the VPS IP. Let's
+Encrypt needs ports **80 and 443** open on the VPS (`sudo ufw allow 80,443/tcp`).
 
 ### 2. Create the app in Dokploy
 
 - New project → **Compose** deployment type.
-- Point it at this repo / branch (`ts-faithful`), Compose file `docker-compose.yml`.
-- Add the two environment variables from step 1.
-- Deploy. On first run, Compose will:
-  1. start `db` (Postgres 16) and wait until it's healthy,
-  2. run the one-shot `migrate` service (`npm run db:migrate`, applies the SQL
-     in `./drizzle`, then seeds the demo scenario — only if the DB is empty),
-  3. start `app` once migration completes, published on host port `8089`.
+- Repo / branch **`deploy/vps`**, Compose file `docker-compose.yml`.
 
-### 3. Open the host firewall
+### 3. Set the environment (Environment tab)
 
-On the Ubuntu box:
+| Variable | Value |
+|----------|-------|
+| `POSTGRES_PASSWORD` | long random string — `openssl rand -hex 32` |
+| `SESSION_SECRET` | long random string — `openssl rand -hex 32` |
+| `SEED_STAFF_PASSWORD` | password for the seeded **`staff` admin** login |
+| `SEED_STUDENT_PASSWORD` | password for the seeded `student` and `19234156` logins |
+
+Compose refuses to start if any is missing. The seed passwords are read **once**,
+on the first deploy into an empty database; changing them later does not alter
+existing accounts. They are never printed to the deploy log.
+
+`DATABASE_URL` is built from `POSTGRES_PASSWORD` inside `docker-compose.yml`.
+
+### 4. Attach the domain (Domains tab)
+
+- **Service name:** `app` · **Host:** your domain · **Path:** `/`
+- **Container port:** `3000`
+- **HTTPS:** on · **Certificate:** Let's Encrypt
+
+### 5. Deploy
+
+Compose will:
+
+1. start `db` (Postgres 16) and wait until it's healthy,
+2. run the one-shot `migrate` service — applies the SQL in `./drizzle`, then
+   seeds the demo scenario **only if the database is empty**,
+3. start `app` once that completes.
+
+### 6. Verify
+
+Browse to `https://<your-domain>/` → login page → sign in as `staff` with
+`SEED_STAFF_PASSWORD`.
+
+To check the container directly, bypassing Traefik, tunnel the loopback port.
+Localhost counts as a secure context, so login works over the tunnel too:
 
 ```bash
-sudo ufw allow 8089/tcp
+ssh -L 8089:127.0.0.1:8089 <user>@<vps-ip>
 ```
 
-### 4. Demo data (seeds itself)
+then open `http://localhost:8089/`.
 
-Seeding is automatic: the `migrate` service runs `db:seed:if-empty` after the
-migrations, which loads the fixed scenario **only when the database is empty**
-(first deploy). Redeploys skip it, so existing accounts/posts are never wiped.
+---
 
-To force a full re-seed (wipes all data back to the fixed scenario):
+## No domain? (not recommended)
 
-```bash
-docker compose run --rm migrate npm run db:seed
-```
+Serving by bare IP means **plain HTTP on the open internet** — student passwords
+and session cookies travel unencrypted. If you accept that for a short test, add:
 
-### 5. Verify
+| Variable | Value |
+|----------|-------|
+| `APP_BIND` | `0.0.0.0` |
+| `SESSION_COOKIE_SECURE` | `false` |
 
-Browse to `http://<server-ip>:8089/` — you should reach the login page.
+and browse to `http://<vps-ip>:8089/`. Note that Docker-published ports
+**bypass `ufw`**: once bound to `0.0.0.0` the port is public whatever the
+firewall says. Restrict it at the VPS provider's firewall if you need to.
 
 ---
 
 ## Notes / gotchas
 
-- **Port 3000 is the Dokploy dashboard** (a *host* port). MockSocial's *internal*
-  3000 is isolated on its own Docker network and is mapped to host **8089**, so
-  there is no conflict — just never map it to host `3000`.
-- **Session cookie over plain HTTP:** browsers drop `Secure` cookies on
-  `http://<ip>:<port>`, so compose sets `SESSION_COOKIE_SECURE=false`. Without it
-  login silently bounces back to `/login`. Set it to `true` only behind HTTPS.
+- **Login bounces back to `/login`:** the session cookie is `Secure` but the page
+  was loaded over plain HTTP, so the browser dropped it. Use the HTTPS domain, or
+  set `SESSION_COOKIE_SECURE=false` (see above).
+- **`app` can't resolve `db` after adding a domain:** Dokploy appends
+  `dokploy-network` to the service's networks. `app` lists `default` explicitly
+  so it keeps the DB connection — don't remove that `networks:` block. Use
+  Dokploy's **Preview Compose** to see the final file.
+- **Port 8089 already taken on the VPS:** set `APP_PORT` to any free port. It is
+  loopback-only, so it just needs to be unused.
+- **Force a full re-seed** (wipes all data back to the fixed scenario; uses the
+  current `SEED_*` values):
+
+  ```bash
+  docker compose run --rm migrate npm run db:seed
+  ```
+
 - **Activity log:** `logs/app.log` lives in the `mocksocial-logs` volume, so the
   teacher/admin log viewer keeps its history across redeploys.
 - **Postgres major version:** the image is `postgres:16-alpine`. If you restore a

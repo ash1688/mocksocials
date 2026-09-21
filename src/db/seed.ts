@@ -151,9 +151,13 @@ async function main() {
 
   // --- Demo logins -----------------------------------------------------------
   console.log("Creating demo accounts…");
-  const staffHash = await hashPassword("staff");
-  const studentDevHash = await hashPassword("student");
-  const studentFixedHash = await hashPassword("Student26"); // faithful student password
+  // Well-known defaults are fine on a LAN / dev box. A public deploy overrides
+  // them via env (see DEPLOY.md) so `staff / staff` isn't an open admin login.
+  const staffPw = process.env.SEED_STAFF_PASSWORD || "staff";
+  const studentPw = process.env.SEED_STUDENT_PASSWORD;
+  const staffHash = await hashPassword(staffPw);
+  const studentDevHash = await hashPassword(studentPw || "student");
+  const studentFixedHash = await hashPassword(studentPw || "Student26"); // faithful student password
 
   const insertedUsers = await db
     .insert(users)
@@ -266,9 +270,15 @@ async function main() {
     `Done: ${postCount} posts, ${likeCount} likes, ${commentCount} comments across ${platforms.length} platforms.`,
   );
   console.log("\nDemo logins:");
-  console.log("  staff / staff           (admin)");
-  console.log("  student / student       (student)");
-  console.log("  19234156 / Student26    (student, faithful)");
+  // Never echo env-supplied passwords — this output lands in deploy logs.
+  const fromEnv = "<from env>";
+  console.log(
+    `  staff / ${process.env.SEED_STAFF_PASSWORD ? fromEnv : "staff"}           (admin)`,
+  );
+  console.log(`  student / ${studentPw ? fromEnv : "student"}       (student)`);
+  console.log(
+    `  19234156 / ${studentPw ? fromEnv : "Student26"}    (student, faithful)`,
+  );
 
   await db.$client.end();
 }
