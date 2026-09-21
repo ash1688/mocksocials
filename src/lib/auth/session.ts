@@ -35,6 +35,18 @@ async function hashToken(token: string): Promise<string> {
   return Buffer.from(digest).toString("hex");
 }
 
+/**
+ * Secure by default in production. Browsers drop `Secure` cookies on plain
+ * HTTP (localhost excepted), so an IP+port deploy with no TLS must opt out with
+ * SESSION_COOKIE_SECURE=false or nobody can log in.
+ */
+function cookieSecure(): boolean {
+  const override = process.env.SESSION_COOKIE_SECURE;
+  if (override === "true") return true;
+  if (override === "false") return false;
+  return process.env.NODE_ENV === "production";
+}
+
 /** Create a session for a user and set the cookie. Call from an action. */
 export async function createSession(userId: number): Promise<void> {
   const token = generateSessionToken();
@@ -47,7 +59,7 @@ export async function createSession(userId: number): Promise<void> {
   store.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: cookieSecure(),
     path: "/",
     expires: expiresAt,
   });
