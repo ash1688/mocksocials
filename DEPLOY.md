@@ -145,7 +145,7 @@ firewall says. Restrict it at the VPS provider's firewall if you need to.
   `https://dokploy.example.com`), `DOKPLOY_API_KEY` (Dokploy → Profile → API
   keys) and `DOKPLOY_COMPOSE_ID` (in the app's URL). The workflow then calls
   `POST /api/compose.deploy` after the images are pushed. Skipped if unset.
-- **ARM VPS:** images are built for `linux/amd64` and `linux/arm64`. If yours is
-  x86, drop `linux/arm64` from `PLATFORMS` in the workflow for faster builds.
+- **ARM VPS:** images are built for `linux/amd64` only. For an ARM box, add
+  `linux/arm64` to `PLATFORMS` in the workflow (see the comment there).
 - **Building locally instead:**
   `docker compose -f docker-compose.yml -f docker-compose.build.yml up --build`
